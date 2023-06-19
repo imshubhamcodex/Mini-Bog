@@ -146,8 +146,8 @@ function runme() {
       e.children[0].style.position = "relative";
       e.children[0].innerHTML += `<div style="position:absolute;top:2px; height:76%;
   width:${change}%;background:rgba(255,0,0,${change === 100
-        ? "0.4"
-        : "0.2"});z-index:999; border-top-right-radius:8px; border-bottom-right-radius:8px; ">
+        ? "0.5"
+        : "0.3"});z-index:999; border-top-right-radius:8px; border-bottom-right-radius:8px; ">
 &nbsp;</div>`;
 
       maxOI = putOIArr[0];
@@ -157,8 +157,8 @@ function runme() {
       e.children[6].style.position = "relative";
       e.children[6].innerHTML += `<div style="position:absolute;top:2px; height:76%; right:0px;
 width:${change}%;background:rgba(0,255,0,${change === 100
-        ? "0.4"
-        : "0.2"});z-index:999; border-top-left-radius:8px; border-bottom-left-radius:8px; ">
+        ? "0.5"
+        : "0.3"});z-index:999; border-top-left-radius:8px; border-bottom-left-radius:8px; ">
 &nbsp;</div>`;
     });
 
@@ -198,11 +198,45 @@ width:${change}%;background:rgba(0,255,0,${change === 100
     });
 
     let element = document.getElementsByTagName("tr");
-    Array.from(element).forEach(e => {
-      e.addEventListener("mouseover", function(ele) {
+    Array.from(element).forEach((e, i) => {
+      e.addEventListener("mouseover", function() {
         e.style.backgroundColor = "grey";
+
+        if (i === 0 || i === element.length - 1) {
+          return;
+        }
+
+        let oiCall = e.children[0].textContent.replaceAll(",", "");
+        let coiCall = e.children[1].textContent
+          .split(" ")[0]
+          .replaceAll(",", "");
+        let coiPerCall = e.children[1].textContent
+          .split(" ")[1]
+          .split(")")[0]
+          .replaceAll(/[(%]/g, "");
+
+        let oiPut = e.children[6].textContent.replaceAll(",", "");
+        let coiPut = e.children[5].textContent
+          .split(" ")[0]
+          .replaceAll(",", "");
+        let coiPerPut = e.children[5].textContent
+          .split(" ")[1]
+          .split(")")[0]
+          .replaceAll(/[(%]/g, "");
+
+        if (
+          oiCall * 0.6 +
+            coiCall * 0.35 +
+            coiPerCall * 0.5 -
+            (oiPut * 0.6 + coiPut * 0.35 + coiPerPut * 0.5) >=
+          0
+        ) {
+          e.style.backgroundColor = "rgba(255,0,0,0.2)";
+        } else {
+          e.style.backgroundColor = "rgba(0,255,0,0.2)";
+        }
       });
-      e.addEventListener("mouseout", function(ele) {
+      e.addEventListener("mouseout", function() {
         e.style.backgroundColor = "initial";
       });
     });
@@ -218,6 +252,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
     window.scrollTo(0, 0);
 
-    setTimeout(runme, 1000 * 60 * 1);
-  }, 1000 * 10);
+    setTimeout(runme, 1000 * 90);
+  }, 1000 * 6);
 }
