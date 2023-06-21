@@ -65,7 +65,7 @@ function runme() {
     });
 
     Array.from(body.children).forEach((e, i) => {
-      if (i < strikeIndex - 3 || i > strikeIndex + 6) {
+      if (i < strikeIndex - 6 || i > strikeIndex + 7) {
         body.removeChild(e);
       } else {
         Array.from(e.children).forEach((ele, j) => {
@@ -173,16 +173,30 @@ width:${change}%;background:rgba(0,255,0,${change === 100
     COIArrPut.sort(function(a, b) {
       return b - a;
     });
+    let totalCallCOI = 0;
+    let totalPutCOI = 0;
+    let top4CallCOI = 0;
+    let top4PutCOI = 0;
+
     Array.from(body.children).forEach((ele, i) => {
       let actual = ele.textContent.split(" ")[1].split(")")[0] + ")";
+      totalCallCOI += Number(
+        ele.textContent.split(" ")[0].split("\n")[1].replaceAll(",", "")
+      );
+      totalPutCOI += Number(
+        ele.children[5].textContent.split(" ")[0].replaceAll(",", "")
+      );
 
       if (
         actual === "(" + COIArrCall[0] + "%)" ||
         actual === "(" + COIArrCall[1] + "%)" ||
-        actual === "(" + COIArrCall[COIArrCall.length - 1] + "%)" ||
-        actual === "(" + COIArrCall[COIArrCall.length - 2] + "%)"
+        actual === "(" + COIArrCall[2] + "%)" ||
+        actual === "(" + COIArrCall[3] + "%)"
       ) {
         ele.children[1].style.fontWeight = "bold";
+        top4CallCOI += Number(
+          ele.children[1].textContent.split(" ")[0].replaceAll(",", "")
+        );
       }
 
       actual = ele.textContent.split(" ")[2].split(")")[0] + ")";
@@ -190,10 +204,13 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       if (
         actual === "(" + COIArrPut[0] + "%)" ||
         actual === "(" + COIArrPut[1] + "%)" ||
-        actual === "(" + COIArrPut[COIArrPut.length - 1] + "%)" ||
-        actual === "(" + COIArrPut[COIArrPut.length - 2] + "%)"
+        actual === "(" + COIArrPut[2] + "%)" ||
+        actual === "(" + COIArrPut[3] + "%)"
       ) {
         ele.children[5].style.fontWeight = "bold";
+        top4PutCOI += Number(
+          ele.children[5].textContent.split(" ")[0].replaceAll(",", "")
+        );
       }
     });
 
@@ -225,15 +242,25 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           .replaceAll(/[(%]/g, "");
 
         if (
-          oiCall * 0.6 +
-            coiCall * 0.35 +
-            coiPerCall * 0.5 -
-            (oiPut * 0.6 + coiPut * 0.35 + coiPerPut * 0.5) >=
-          0
+          oiCall * 0.3 +
+            coiCall * 0.6 +
+            coiPerCall * 0.1 -
+            (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) >=
+            0 &&
+          Math.abs(coiCall / coiPut) >= 1.7
         ) {
           e.style.backgroundColor = "rgba(255,0,0,0.2)";
-        } else {
+        } else if (
+          oiCall * 0.3 +
+            coiCall * 0.6 +
+            coiPerCall * 0.1 -
+            (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) <
+            0 &&
+          Math.abs(coiPut / coiCall) >= 1.7
+        ) {
           e.style.backgroundColor = "rgba(0,255,0,0.2)";
+        } else {
+          e.style.backgroundColor = "silver";
         }
       });
       e.addEventListener("mouseout", function() {
@@ -249,6 +276,17 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       "equityOptionChainTotalRow-CE-totVol"
     ).style.display =
       "none";
+
+    table1.children[0].children[0].innerHTML = `<th class="text-center" id="calls" colspan="4"> ${totalCallCOI >
+      totalPutCOI && Math.abs(top4CallCOI / top4PutCOI) > 3.8
+      ? "<span style='color:red; font-weight:bold;'>[CALLS Dominating ▼]</span>"
+      : "CALLS Combined CPR: " +
+        Math.abs(top4CallCOI / (3.3 * top4PutCOI)).toFixed(2)}</th>
+      <th class="text-center" id="puts" colspan="5"> ${totalCallCOI <
+        totalPutCOI && Math.abs(top4PutCOI / top4CallCOI) > 3.8
+        ? "<span style='color:#7fff00; font-weight:bold;'>[PUTS Dominating ▲]</span>"
+        : "PUTS Combined PCR: " +
+          Math.abs(top4PutCOI / (3.3 * top4CallCOI)).toFixed(2)}</th>`;
 
     window.scrollTo(0, 0);
 
