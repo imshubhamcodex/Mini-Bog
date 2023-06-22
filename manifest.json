@@ -7,12 +7,13 @@
 			"matches" : [
 				"https://www.nseindia.com/option-chain"
 			],
-			"js" : ["main.js"]
+			"js" : ["main.js","chart.js"]
 		}
 	],
     "background" : {
 		"scripts": ["background.js"]
 	},
+	"permissions": ["storage","activeTab"],
     "browser_action" : {
 		"default_icon" : "pp.png"
 	}

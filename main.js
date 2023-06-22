@@ -6,7 +6,9 @@ function gotMessage(message, sender, sendResponse) {
     runme();
   }
 }
-
+let PCR = [];
+let CPR = [];
+let xCord = [];
 function runme() {
   document.getElementsByClassName("refreshIcon")[0].click();
   setTimeout(() => {
@@ -288,7 +290,143 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         : "PUTS Combined PCR: " +
           Math.abs(top4PutCOI / (3.3 * top4CallCOI)).toFixed(2)}</th>`;
 
-    window.scrollTo(0, 0);
+    // Fetching data from localstorage
+    if (localStorage.getItem("PCRData") !== null) {
+      PCR = JSON.parse(localStorage.getItem("PCRData"));
+      CPR = JSON.parse(localStorage.getItem("CPRData"));
+      xCord = JSON.parse(localStorage.getItem("PCRxCord"));
+    } else {
+      PCR = [];
+      CPR = [];
+      xCord = [];
+    }
+
+    PCR.push((top4PutCOI / (3.3 * top4CallCOI)).toFixed(2));
+    CPR.push((top4CallCOI / (3.3 * top4PutCOI)).toFixed(2));
+    xCord.push(Date(Date.now()).toString().split(" ")[4]);
+
+    // Setting PCR in local storage
+    let dateSplitArr = Date(Date.now()).toString().split(" ");
+    let todatDate =
+      dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3];
+
+    if (
+      todatDate !== localStorage.getItem("PCRSavedDate") &&
+      localStorage.getItem("PCRSavedDate") !== null
+    ) {
+      localStorage.removeItem("PCRData");
+      localStorage.removeItem("CPRData");
+      localStorage.removeItem("PCRxCord");
+
+      PCR = [];
+      CPR = [];
+      xCord = [];
+      PCR.push((top4PutCOI / (3.3 * top4CallCOI)).toFixed(2));
+      CPR.push((top4CallCOI / (3.3 * top4PutCOI)).toFixed(2));
+      xCord.push(Date(Date.now()).toString().split(" ")[4]);
+      localStorage.setItem(
+        "PCRSavedDate",
+        dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3]
+      );
+    } else {
+      localStorage.setItem("PCRData", JSON.stringify(PCR));
+      localStorage.setItem("CPRData", JSON.stringify(CPR));
+      localStorage.setItem("PCRxCord", JSON.stringify(xCord));
+      localStorage.setItem(
+        "PCRSavedDate",
+        dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3]
+      );
+    }
+    // Ploting PCR Chart
+    document.getElementById(
+      "EqNote"
+    ).innerHTML = `<canvas style="height:400px; margin-left:200px;"  id="chart-put-call-ratio-chart"> </canvas>
+    <br />
+    <br />
+    <br />
+
+    <canvas style="height:400px; margin-left:200px;"  id="chart-call-put-ratio-chart"> </canvas>
+    `;
+
+    let data = {
+      labels: xCord,
+      datasets: [
+        {
+          label: "Put To Call Ratio",
+          backgroundColor: "rgba(0,255,0,0.2)",
+          // borderColor: "rgb(255, 99, 132)",
+          borderColor: "rgba(0,255,0,0.4)",
+          data: PCR,
+        },
+      ],
+    };
+    let config = {
+      type: "line",
+      data,
+      options: {
+        responsive: false,
+        plugins: {
+          legend: {
+            position: "top",
+            align: "start",
+            labels: {
+              padding: 10,
+            },
+          },
+          title: {
+            display: true,
+            text: Date(Date.now()) + " ",
+            align: "start",
+          },
+        },
+        maintainAspectRatio: false,
+      },
+    };
+
+    new Chart(document.getElementById("chart-put-call-ratio-chart"), config);
+
+    data = {
+      labels: xCord,
+      datasets: [
+        {
+          label: "Call To Put Ratio",
+          backgroundColor: "rgba(255,0,0,0.2)",
+          borderColor: "rgb(255, 99, 132)",
+          data: CPR,
+        },
+      ],
+    };
+    config = {
+      type: "line",
+      data,
+      options: {
+        responsive: false,
+        plugins: {
+          legend: {
+            position: "top",
+            align: "start",
+            labels: {
+              padding: 10,
+            },
+          },
+          title: {
+            display: true,
+            text: Date(Date.now()) + " ",
+            align: "start",
+          },
+        },
+        maintainAspectRatio: false,
+      },
+    };
+
+    new Chart(document.getElementById("chart-call-put-ratio-chart"), config);
+
+    window.onscroll = function() {
+      document.getElementById("quickLinkBand").style.display = "none";
+      document.getElementById("quickLinkBand").style.opacity = "0";
+    };
+
+    window.scrollTo(0, 150);
 
     setTimeout(runme, 1000 * 90);
   }, 1000 * 6);
