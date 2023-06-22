@@ -14,6 +14,11 @@ function runme() {
   setTimeout(() => {
     document.getElementsByClassName("container top_logomenu")[0].style.display =
       "none";
+    document.getElementsByClassName("setting_btn")[0].style.display = "none";
+    document.getElementsByClassName("feedbackIconBtn")[0].style.display =
+      "none";
+    document.getElementsByClassName("loginIconBtn")[0].style.display = "none";
+    
     document.getElementsByClassName(
       "container navlinks-container posrel"
     )[0].style.display =
@@ -340,12 +345,19 @@ width:${change}%;background:rgba(0,255,0,${change === 100
     // Ploting PCR Chart
     document.getElementById(
       "EqNote"
-    ).innerHTML = `<canvas style="height:400px; margin-left:200px;"  id="chart-put-call-ratio-chart"> </canvas>
+    ).innerHTML = `<canvas style="height:600px;"  id="chart-put-call-ratio-chart"> </canvas>
     <br />
     <br />
     <br />
 
-    <canvas style="height:400px; margin-left:200px;"  id="chart-call-put-ratio-chart"> </canvas>
+    <canvas style="height:600px;"  id="chart-call-put-ratio-chart"> </canvas>
+
+
+    <br />
+    <br />
+    <br />
+
+    <canvas style="height:600px;"  id="chart-call-put-ratio-chart-both"> </canvas>
     `;
 
     let data = {
@@ -356,9 +368,9 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           backgroundColor: "rgba(0,255,0,0.2)",
           // borderColor: "rgb(255, 99, 132)",
           borderColor: "rgba(0,255,0,0.4)",
-          data: PCR,
-        },
-      ],
+          data: PCR
+        }
+      ]
     };
     let config = {
       type: "line",
@@ -370,17 +382,17 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             position: "top",
             align: "start",
             labels: {
-              padding: 10,
-            },
+              padding: 10
+            }
           },
           title: {
             display: true,
             text: Date(Date.now()) + " ",
-            align: "start",
-          },
+            align: "start"
+          }
         },
-        maintainAspectRatio: false,
-      },
+        maintainAspectRatio: false
+      }
     };
 
     new Chart(document.getElementById("chart-put-call-ratio-chart"), config);
@@ -392,9 +404,9 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           label: "Call To Put Ratio",
           backgroundColor: "rgba(255,0,0,0.2)",
           borderColor: "rgb(255, 99, 132)",
-          data: CPR,
-        },
-      ],
+          data: CPR
+        }
+      ]
     };
     config = {
       type: "line",
@@ -406,24 +418,76 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             position: "top",
             align: "start",
             labels: {
-              padding: 10,
-            },
+              padding: 10
+            }
           },
           title: {
             display: true,
             text: Date(Date.now()) + " ",
-            align: "start",
-          },
+            align: "start"
+          }
         },
-        maintainAspectRatio: false,
-      },
+        maintainAspectRatio: false
+      }
     };
 
     new Chart(document.getElementById("chart-call-put-ratio-chart"), config);
 
+    data = {
+      labels: xCord,
+      datasets: [
+        {
+          label: "Call To Put Ratio",
+          backgroundColor: "rgba(255,0,0,0.2)",
+          borderColor: "rgb(255, 99, 132)",
+          data: CPR
+        },
+        {
+          label: "Put To Call Ratio",
+          backgroundColor: "rgba(0,255,0,0.2)",
+          // borderColor: "rgb(255, 99, 132)",
+          borderColor: "rgba(0,255,0,0.4)",
+          data: PCR
+        }
+      ]
+    };
+    config = {
+      type: "line",
+      data,
+      options: {
+        responsive: false,
+        plugins: {
+          legend: {
+            position: "top",
+            align: "start",
+            labels: {
+              padding: 10
+            }
+          },
+          title: {
+            display: true,
+            text: Date(Date.now()) + " ",
+            align: "start"
+          }
+        },
+        maintainAspectRatio: false
+      }
+    };
+
+    new Chart(
+      document.getElementById("chart-call-put-ratio-chart-both"),
+      config
+    );
+
     window.onscroll = function() {
       document.getElementById("quickLinkBand").style.display = "none";
       document.getElementById("quickLinkBand").style.opacity = "0";
+
+      if (window.scrollY > 200) {
+        document.getElementsByTagName("table")[0].children[0].style.opacity = 0;
+      } else {
+        document.getElementsByTagName("table")[0].children[0].style.opacity = 1;
+      }
     };
 
     window.scrollTo(0, 150);
