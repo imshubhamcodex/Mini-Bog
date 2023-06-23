@@ -18,7 +18,7 @@ function runme() {
     document.getElementsByClassName("feedbackIconBtn")[0].style.display =
       "none";
     document.getElementsByClassName("loginIconBtn")[0].style.display = "none";
-    
+
     document.getElementsByClassName(
       "container navlinks-container posrel"
     )[0].style.display =
@@ -182,8 +182,36 @@ width:${change}%;background:rgba(0,255,0,${change === 100
     });
     let totalCallCOI = 0;
     let totalPutCOI = 0;
-    let top4CallCOI = 0;
-    let top4PutCOI = 0;
+    let top5CallCOI = 0;
+    let top5PutCOI = 0;
+    let allCallCOI = [];
+    let allPutCOI = [];
+
+    Array.from(body.children).forEach(ele => {
+      allCallCOI.push(
+        Number(ele.children[1].textContent.split(" ")[0].replaceAll(",", ""))
+      );
+
+      allPutCOI.push(
+        Number(ele.children[5].textContent.split(" ")[0].replaceAll(",", ""))
+      );
+    });
+
+    allCallCOI.sort(function(a, b) {
+      return b - a;
+    });
+    allPutCOI.sort(function(a, b) {
+      return b - a;
+    });
+
+    top5CallCOI =
+      allCallCOI[0] +
+      allCallCOI[1] +
+      allCallCOI[2] +
+      allCallCOI[3] +
+      allCallCOI[4];
+    top5PutCOI +=
+      allPutCOI[0] + allPutCOI[1] + allPutCOI[2] + allPutCOI[3] + allPutCOI[4];
 
     Array.from(body.children).forEach((ele, i) => {
       let actual = ele.textContent.split(" ")[1].split(")")[0] + ")";
@@ -201,9 +229,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         actual === "(" + COIArrCall[3] + "%)"
       ) {
         ele.children[1].style.fontWeight = "bold";
-        top4CallCOI += Number(
-          ele.children[1].textContent.split(" ")[0].replaceAll(",", "")
-        );
       }
 
       actual = ele.textContent.split(" ")[2].split(")")[0] + ")";
@@ -215,9 +240,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         actual === "(" + COIArrPut[3] + "%)"
       ) {
         ele.children[5].style.fontWeight = "bold";
-        top4PutCOI += Number(
-          ele.children[5].textContent.split(" ")[0].replaceAll(",", "")
-        );
       }
     });
 
@@ -285,15 +307,15 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       "none";
 
     table1.children[0].children[0].innerHTML = `<th class="text-center" id="calls" colspan="4"> ${totalCallCOI >
-      totalPutCOI && Math.abs(top4CallCOI / top4PutCOI) > 3.8
+      totalPutCOI && Math.abs(top5CallCOI / top5PutCOI) > 3.8
       ? "<span style='color:red; font-weight:bold;'>[CALLS Dominating ▼]</span>"
       : "CALLS Combined CPR: " +
-        Math.abs(top4CallCOI / (3.3 * top4PutCOI)).toFixed(2)}</th>
+        Math.abs(top5CallCOI / (3.3 * top5PutCOI)).toFixed(2)}</th>
       <th class="text-center" id="puts" colspan="5"> ${totalCallCOI <
-        totalPutCOI && Math.abs(top4PutCOI / top4CallCOI) > 3.8
+        totalPutCOI && Math.abs(top5PutCOI / top5CallCOI) > 3.8
         ? "<span style='color:#7fff00; font-weight:bold;'>[PUTS Dominating ▲]</span>"
         : "PUTS Combined PCR: " +
-          Math.abs(top4PutCOI / (3.3 * top4CallCOI)).toFixed(2)}</th>`;
+          Math.abs(top5PutCOI / (3.3 * top5CallCOI)).toFixed(2)}</th>`;
 
     // Fetching data from localstorage
     if (localStorage.getItem("PCRData") !== null) {
@@ -306,8 +328,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       xCord = [];
     }
 
-    PCR.push((top4PutCOI / (3.3 * top4CallCOI)).toFixed(2));
-    CPR.push((top4CallCOI / (3.3 * top4PutCOI)).toFixed(2));
+    PCR.push((top5PutCOI / (3.3 * top5CallCOI)).toFixed(2));
+    CPR.push((top5CallCOI / (3.3 * top5PutCOI)).toFixed(2));
     xCord.push(Date(Date.now()).toString().split(" ")[4]);
 
     // Setting PCR in local storage
@@ -326,8 +348,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       PCR = [];
       CPR = [];
       xCord = [];
-      PCR.push((top4PutCOI / (3.3 * top4CallCOI)).toFixed(2));
-      CPR.push((top4CallCOI / (3.3 * top4PutCOI)).toFixed(2));
+      PCR.push((top5PutCOI / (3.3 * top5CallCOI)).toFixed(2));
+      CPR.push((top5CallCOI / (3.3 * top5PutCOI)).toFixed(2));
       xCord.push(Date(Date.now()).toString().split(" ")[4]);
       localStorage.setItem(
         "PCRSavedDate",
@@ -358,6 +380,12 @@ width:${change}%;background:rgba(0,255,0,${change === 100
     <br />
 
     <canvas style="height:600px;"  id="chart-call-put-ratio-chart-both"> </canvas>
+
+    <br />
+    <br />
+    <br />
+
+    <canvas style="height:600px;"  id="chart-put-call"> </canvas>
     `;
 
     let data = {
@@ -368,7 +396,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           backgroundColor: "rgba(0,255,0,0.2)",
           // borderColor: "rgb(255, 99, 132)",
           borderColor: "rgba(0,255,0,0.4)",
-          data: PCR
+          data: PCR,
+          tension: 0.5
         }
       ]
     };
@@ -404,7 +433,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           label: "Call To Put Ratio",
           backgroundColor: "rgba(255,0,0,0.2)",
           borderColor: "rgb(255, 99, 132)",
-          data: CPR
+          data: CPR,
+          tension: 0.5
         }
       ]
     };
@@ -440,14 +470,16 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           label: "Call To Put Ratio",
           backgroundColor: "rgba(255,0,0,0.2)",
           borderColor: "rgb(255, 99, 132)",
-          data: CPR
+          data: CPR,
+          tension: 0.5
         },
         {
           label: "Put To Call Ratio",
           backgroundColor: "rgba(0,255,0,0.2)",
           // borderColor: "rgb(255, 99, 132)",
           borderColor: "rgba(0,255,0,0.4)",
-          data: PCR
+          data: PCR,
+          tension: 0.5
         }
       ]
     };
@@ -479,18 +511,83 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       config
     );
 
+    let CPRInvert = [];
+    let normPCRCPR = [];
+
+    CPR.forEach((ele, i) => {
+      CPRInvert.push(-ele);
+
+      if (ele > 0.2 && PCR[i] < 0.25) {
+        normPCRCPR.push(3 * PCR[i] - ele);
+      } else if (PCR[i] > 0.25 && ele <= 0.3) {
+        normPCRCPR.push(PCR[i] - 1.23 * ele);
+      } else {
+        normPCRCPR.push(PCR[i] - ele);
+      }
+    });
+
+    data = {
+      labels: xCord,
+      datasets: [
+        {
+          label: "PCR",
+          backgroundColor: "rgba(0,255,0,0.2)",
+          borderColor: "rgba(0,255,0,0.4)",
+          data: PCR
+        },
+        {
+          label: "CPR",
+          backgroundColor: "rgba(255,0,0,0.2)",
+          borderColor: "rgb(255, 99, 132)",
+          data: CPRInvert
+        },
+        {
+          label: "Normalize Difference PUT - CALL [BETA]",
+          backgroundColor: "grey",
+          borderColor: "black",
+          data: normPCRCPR
+        }
+      ]
+    };
+    config = {
+      type: "bar",
+      data,
+      options: {
+        responsive: false,
+        plugins: {
+          legend: {
+            position: "top",
+            align: "start",
+            labels: {
+              padding: 10
+            }
+          },
+          title: {
+            display: true,
+            text: Date(Date.now()) + " " + "[BETA]",
+            align: "start"
+          }
+        },
+        maintainAspectRatio: false
+      }
+    };
+
+    new Chart(document.getElementById("chart-put-call"), config);
+
     window.onscroll = function() {
-      document.getElementById("quickLinkBand").style.display = "none";
       document.getElementById("quickLinkBand").style.opacity = "0";
 
-      if (window.scrollY > 200) {
-        document.getElementsByTagName("table")[0].children[0].style.opacity = 0;
+      if (window.scrollY > 250) {
+        if (document.getElementsByTagName("table")[0] !== undefined)
+          document.getElementsByTagName(
+            "table"
+          )[0].children[0].style.opacity = 0;
       } else {
         document.getElementsByTagName("table")[0].children[0].style.opacity = 1;
       }
     };
 
-    window.scrollTo(0, 150);
+    // window.scrollTo(0, 150);
 
     setTimeout(runme, 1000 * 90);
   }, 1000 * 6);
