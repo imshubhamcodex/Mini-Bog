@@ -1,20 +1,32 @@
 chrome.runtime.onMessage.addListener(gotMessage);
-
+/* Activator snippnet
+   Activate the script
+*/
 function gotMessage(message, sender, sendResponse) {
   if (message.text === "go") {
-    console.log("Execute Script!");
-
+    console.log("Pluto Activated");
+    console.log("Made by shubhamcodex - https://github.com/imshubhamcodex/Pluto---Chain-data-Analytics");
     runme();
   }
 }
 
+/* Global variable use to store PCR CPR and IV data for one whole day.
+  And do not orerwrite on recursion calls 
+*/
 let PCR = [];
 let CPR = [];
 let xCord = [];
+let checkedIVPut = [{ id: "dummy" }];
+let checkedIVCall = [{ id: "dummy" }];
+
+/* Main entry point */
 function runme() {
+  /* For refresh */
   document.getElementsByClassName("refreshIcon")[0].click();
+  /* Delay to complete the document load */
   setTimeout(() => {
     try {
+      /* Removing unnecassy UI elements */
       document.getElementsByClassName(
         "container top_logomenu"
       )[0].style.display =
@@ -32,21 +44,28 @@ function runme() {
       document.getElementsByClassName("notranslate")[0].style.paddingTop =
         "0px";
 
+      /* Now Action begain to read data table*/
       let table1 = document.getElementById("optionChainTable-indices");
 
       let header = table1.children[0].children[1];
       table1.children[0].children[0].innerHTML = `<th class="text-center" id="calls" colspan="4">CALLS</th>
 <th class="text-center" id="puts" colspan="5">PUTS</th>`;
 
+      /* Get todays date used to track and update localstorage data for only this whole day  */
+      let dateSplitArr = Date(Date.now()).toString().split(" ");
+      let todatDate =
+        dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3];
+
+      /* Removing other unimportant elements from headers*/
       Array.from(header.children).forEach((e, i) => {
         if (
           i !== 1 &&
           i !== 2 &&
-          i !== 5 &&
+          i !== 4 &&
           i !== 11 &&
           i !== 21 &&
           i !== 20 &&
-          i !== 17
+          i !== 18
         ) {
           header.removeChild(e);
         } else {
@@ -68,6 +87,8 @@ function runme() {
 
       let body = table1.children[1];
       let strikeIndex = 0;
+
+      /* Getting latest strike price */
       Array.from(body.children).forEach((e, i) => {
         let testStrike = Number(
           e.children[11].children[0].textContent.replaceAll(",", "")
@@ -77,6 +98,7 @@ function runme() {
         }
       });
 
+      /* Removing unimportant elements from main data table*/
       Array.from(body.children).forEach((e, i) => {
         if (i < strikeIndex - 6 || i > strikeIndex + 7) {
           body.removeChild(e);
@@ -85,11 +107,11 @@ function runme() {
             if (
               j !== 1 &&
               j !== 2 &&
-              j !== 5 &&
+              j !== 4 &&
               j !== 11 &&
               j !== 21 &&
               j !== 20 &&
-              j !== 17
+              j !== 18
             ) {
               e.removeChild(ele);
             } else {
@@ -103,10 +125,15 @@ function runme() {
         }
       });
 
-      //
-      //
-      //
-      // Calculating %change in IO
+      /* Adding checkbox in IV column */
+      Array.from(body.children).forEach((e, i) => {
+        e.children[4].innerHTML += `<input style="float:right;" type="checkbox" id="IVP${i}"  value="${e
+          .children[4].textContent}">`;
+        e.children[2].innerHTML += `<input style="float:right;" type="checkbox" id="IVC${i}"  value="${e
+          .children[2].textContent}">`;
+      });
+
+      /* Calculation change in COI percentage and adding UP DOWN marker */
       let COIArrCall = [];
       let COIArrPut = [];
       let callOIArr = [];
@@ -139,11 +166,7 @@ function runme() {
         COIArrPut.push(coiPerPut.toFixed(2));
       });
 
-      //
-      //
-      //
-      //
-      //Changing bg color of OI
+      /* Changing background color or OI to represent bulish and brearish sentiments */
       Array.from(body.children).forEach((e, i) => {
         callOIArr.sort(function(a, b) {
           return b - a;
@@ -175,11 +198,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 &nbsp;</div>`;
       });
 
-      //
-      //
-      //
-      //
-      //Making COI bold
+      /* Marking top 4 best COI as bold */
       COIArrCall.sort(function(a, b) {
         return b - a;
       });
@@ -253,6 +272,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         }
       });
 
+      /* Adding hover effect and sentiments on each strike price*/
       let element = document.getElementsByTagName("tr");
       Array.from(element).forEach((e, i) => {
         e.addEventListener("mouseover", function() {
@@ -316,6 +336,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       ).style.display =
         "none";
 
+      /* Modifing data table header on PCR and CPR value */
+
       table1.children[0].children[0].innerHTML = `<th class="text-center" id="calls" colspan="4"> ${totalCallCOI >
         totalPutCOI && Math.abs(top5CallCOI / top5PutCOI) >= 4
         ? "<span style='color:red; font-weight:bold;'>[CALLS Dominating ▼]</span>"
@@ -327,7 +349,33 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         : "PUTS Combined PCR: " +
           Math.abs(top5PutCOI / (2.5 * top5CallCOI)).toFixed(2)}</th>`;
 
-      // Fetching data from localstorage
+      /* Saving and fetching IV data from in localstorage  */
+
+      if (localStorage.getItem("checkedIVPutData") !== null) {
+        checkedIVPut = JSON.parse(localStorage.getItem("checkedIVPutData"));
+        checkedIVCall = JSON.parse(localStorage.getItem("checkedIVCallData"));
+      } else {
+        checkedIVPut = [{ id: "dummy" }];
+        checkedIVCall = [{ id: "dummy" }];
+      }
+
+      checkedIVPut.forEach(e => {
+        if (e.id !== "dummy") {
+          document.getElementById(e.id).checked = true;
+          let newIV = document.getElementById(e.id).parentNode.textContent;
+          e.value.push(Number(newIV));
+        }
+      });
+
+      checkedIVCall.forEach(e => {
+        if (e.id !== "dummy") {
+          document.getElementById(e.id).checked = true;
+          let newIV = document.getElementById(e.id).parentNode.textContent;
+          e.value.push(Number(newIV));
+        }
+      });
+
+      /* Saving and fetching PCR CPR data in from localstorage */
       if (localStorage.getItem("PCRData") !== null) {
         PCR = JSON.parse(localStorage.getItem("PCRData"));
         CPR = JSON.parse(localStorage.getItem("CPRData"));
@@ -342,11 +390,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       CPR.push((top5CallCOI / (2.5 * top5PutCOI)).toFixed(2));
       xCord.push(Date(Date.now()).toString().split(" ")[4]);
 
-      // Setting PCR in local storage
-      let dateSplitArr = Date(Date.now()).toString().split(" ");
-      let todatDate =
-        dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3];
-
+      /* Removing PCR CPR IV data if date does NOT match */
       if (
         todatDate !== localStorage.getItem("PCRSavedDate") &&
         localStorage.getItem("PCRSavedDate") !== null
@@ -354,6 +398,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         localStorage.removeItem("PCRData");
         localStorage.removeItem("CPRData");
         localStorage.removeItem("PCRxCord");
+        localStorage.removeItem("checkedIVPutData");
+        localStorage.removeItem("checkedIVCallData");
 
         PCR = [];
         CPR = [];
@@ -374,7 +420,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3]
         );
       }
-      // Ploting PCR Chart
+      /* Chart Plot segement */
       document.getElementById(
         "EqNote"
       ).innerHTML = `<canvas style="height:600px;"  id="chart-put-call-ratio-chart"> </canvas>
@@ -396,8 +442,15 @@ width:${change}%;background:rgba(0,255,0,${change === 100
     <br />
 
     <canvas style="height:600px;"  id="chart-put-call"> </canvas>
+
+    <br />
+    <br />
+    <br />
+
+    <canvas style="height:600px;"  id="chart-IV"> </canvas>
     `;
 
+      /* Threshold arr created */
       let arrThres = new Array(xCord.length);
       arrThres.fill(1.05);
 
@@ -522,7 +575,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             tension: 0.5
           },
           {
-            label: "Threshold",
+            label: "Median Threshold",
             backgroundColor: "grey",
             borderColor: "grey",
             data: arrThres
@@ -635,6 +688,118 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         }
       };
 
+      /* Adding and Removing IV to track for the whole day */
+      window.onclick = function(e) {
+        if (e.target.id.match(/IVC/)) {
+          if (e.target.checked) {
+            if (checkedIVCall.some(iv => iv.id !== e.target.id)) {
+              let obj = {
+                id: e.target.id,
+                value: [Number(e.target.value)]
+              };
+              checkedIVCall.push(obj);
+              console.log("IV Added: " + e.target.id);
+            }
+          } else {
+            if (checkedIVCall.some(iv => iv.id === e.target.id)) {
+              checkedIVCall = checkedIVCall.filter(
+                item => item.id !== e.target.id
+              );
+              console.log("IV Removed: " + e.target.id);
+            }
+          }
+        }
+        if (e.target.id.match(/IVP/)) {
+          if (e.target.checked) {
+            if (checkedIVPut.some(iv => iv.id !== e.target.id)) {
+              let obj = {
+                id: e.target.id,
+                value: [Number(e.target.value)]
+              };
+              checkedIVPut.push(obj);
+              console.log("IV Added: " + e.target.id);
+            }
+          } else {
+            if (checkedIVPut.some(iv => iv.id === e.target.id)) {
+              checkedIVPut = checkedIVPut.filter(
+                item => item.id !== e.target.id
+              );
+              console.log("IV Removed: " + e.target.id);
+            }
+          }
+        }
+        localStorage.setItem("checkedIVPutData", JSON.stringify(checkedIVPut));
+        localStorage.setItem(
+          "checkedIVCallData",
+          JSON.stringify(checkedIVCall)
+        );
+      };
+
+      localStorage.setItem("checkedIVPutData", JSON.stringify(checkedIVPut));
+      localStorage.setItem("checkedIVCallData", JSON.stringify(checkedIVCall));
+
+      /* Creating dataset for IV data */
+      let IVDataset = [];
+      checkedIVPut.forEach((ele, i) => {
+        if (ele.id !== "dummy") {
+          let strike = document.getElementById(ele.id).parentNode.parentNode
+            .children[3].textContent;
+          let obj = {
+            label: "Put IV" + strike,
+            backgroundColor: `rgba(0,255,0,${(i + 1) / checkedIVPut.length})`,
+            data: ele.value,
+            tension: 0.5
+          };
+          IVDataset.push(obj);
+        }
+      });
+
+      checkedIVCall.forEach((ele, i) => {
+        if (ele.id !== "dummy") {
+          let strike = document.getElementById(ele.id).parentNode.parentNode
+            .children[3].textContent;
+          let obj = {
+            label: "Call IV" + strike,
+            backgroundColor: `rgba(255,0,0,${(i + 1) / checkedIVCall.length})`,
+            data: ele.value,
+            tension: 0.5
+          };
+          IVDataset.push(obj);
+        }
+      });
+
+      data = {
+        labels: xCord,
+        datasets: IVDataset
+      };
+      config = {
+        type: "line",
+        data,
+        options: {
+          responsive: false,
+          plugins: {
+            legend: {
+              position: "top",
+              align: "start",
+              labels: {
+                padding: 10
+              }
+            },
+            title: {
+              display: true,
+              text:
+                Date(Date.now()) +
+                " " +
+                "Call IV decrease => Bearish     #####     Put IV decreases => Bulish",
+              align: "start"
+            }
+          },
+          maintainAspectRatio: false
+        }
+      };
+
+      new Chart(document.getElementById("chart-IV"), config);
+
       window.scrollTo(0, 120);
 
       let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
@@ -646,7 +811,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         setTimeout(runme, 1000 * 90);
       }
     } catch (err) {
-      console.log("err occured !!");
+      console.log("err occured !!" + err);
     }
   }, 1000 * 6);
 }
