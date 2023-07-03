@@ -515,13 +515,17 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         datasets: [
           {
             label: "CALL COI",
-            backgroundColor: "rgba(255,0,0,0.4)",
-            data: allCallCOIDup
+            backgroundColor: "rgba(255,0,0,0.3)",
+            data: allCallCOIDup,
+            borderColor: "rgba(255,0,0,0.8)",
+            borderWidth: 1
           },
           {
             label: "PUT COI",
-            backgroundColor: "rgba(0,255,0,0.4)",
-            data: allPutCOIDup
+            backgroundColor: "rgba(0,255,0,0.3)",
+            data: allPutCOIDup,
+            borderWidth: 1,
+            borderColor: "rgba(0,255,0,0.8)"
           }
         ]
       };
@@ -602,6 +606,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       arrThres = new Array(xCord.length);
       arrThres.fill(0.65);
+      let arrThres2 = new Array(xCord.length);
+      arrThres2.fill(0.3);
 
       data = {
         labels: xCord,
@@ -622,16 +628,22 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           },
           {
             label: "Median",
-            backgroundColor: "teal",
-            borderColor: "teal",
+            backgroundColor: "black",
+            borderColor: "black",
             data: arrMedian,
             tension: 0.5
           },
           {
-            label: "Median Threshold",
+            label: "Median Upper Threshold",
             backgroundColor: "grey",
             borderColor: "grey",
             data: arrThres
+          },
+          {
+            label: "Median Lower Threshold",
+            backgroundColor: "grey",
+            borderColor: "grey",
+            data: arrThres2
           }
         ]
       };
@@ -669,12 +681,16 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       CPR.forEach((ele, i) => {
         CPRInvert.push(-ele);
 
-        if (ele < 0.3) {
+        if (ele < 0.3 && PCR[i] > 0.6) {
           normPCRCPR.push(PCR[i] - 2 * ele - 0.15);
-        } else if (PCR[i] < 0.5) {
-          normPCRCPR.push(1.4 * PCR[i] - ele - 0.15);
+        } else if (PCR[i] <= 0.6 && ele >= 0.3) {
+          normPCRCPR.push(1.3 * PCR[i] - ele - 0.15);
         } else {
-          normPCRCPR.push(PCR[i] - ele - 0.15);
+          if (ele < 0.3) {
+            normPCRCPR.push(PCR[i] - 2 * ele - 0.05);
+          } else {
+            normPCRCPR.push(PCR[i] - ele - 0.15);
+          }
         }
       });
 
@@ -685,19 +701,22 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             label: "PCR",
             backgroundColor: "rgba(0,255,0,0.2)",
             borderColor: "rgba(0,255,0,0.4)",
-            data: PCR
+            data: PCR,
+            borderWidth: 1
           },
           {
             label: "CPR",
             backgroundColor: "rgba(255,0,0,0.2)",
             borderColor: "rgb(255, 99, 132)",
-            data: CPRInvert
+            data: CPRInvert,
+            borderWidth: 1
           },
           {
             label: "Market Sentiment",
             backgroundColor: "grey",
             borderColor: "black",
-            data: normPCRCPR
+            data: normPCRCPR,
+            borderWidth: 1
           }
         ]
       };
