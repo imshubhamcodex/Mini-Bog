@@ -5,7 +5,9 @@ chrome.runtime.onMessage.addListener(gotMessage);
 function gotMessage(message, sender, sendResponse) {
   if (message.text === "go") {
     console.log("Pluto Activated");
-    console.log("Made by shubhamcodex - https://github.com/imshubhamcodex/Pluto---Chain-data-Analytics");
+    console.log(
+      "Made by shubhamcodex - https://github.com/imshubhamcodex/Pluto---Chain-data-Analytics"
+    );
     runme();
   }
 }
@@ -125,12 +127,14 @@ function runme() {
         }
       });
 
+      let allStrikePrices = [];
       /* Adding checkbox in IV column */
       Array.from(body.children).forEach((e, i) => {
         e.children[4].innerHTML += `<input style="float:right;" type="checkbox" id="IVP${i}"  value="${e
           .children[4].textContent}">`;
         e.children[2].innerHTML += `<input style="float:right;" type="checkbox" id="IVC${i}"  value="${e
           .children[2].textContent}">`;
+        allStrikePrices.push(e.children[3].textContent);
       });
 
       /* Calculation change in COI percentage and adding UP DOWN marker */
@@ -211,6 +215,8 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       let top5PutCOI = 0;
       let allCallCOI = [];
       let allPutCOI = [];
+      let allCallCOIDup = [];
+      let allPutCOIDup = [];
 
       Array.from(body.children).forEach(ele => {
         allCallCOI.push(
@@ -221,6 +227,9 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           Number(ele.children[5].textContent.split(" ")[0].replaceAll(",", ""))
         );
       });
+
+      allCallCOIDup = [...allCallCOI];
+      allPutCOIDup = [...allPutCOI];
 
       allCallCOI.sort(function(a, b) {
         return b - a;
@@ -421,9 +430,13 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         );
       }
       /* Chart Plot segement */
-      document.getElementById(
-        "EqNote"
-      ).innerHTML = `<canvas style="height:600px;"  id="chart-put-call-ratio-chart"> </canvas>
+      document.getElementById("EqNote").innerHTML = `
+      <canvas style="height:600px;"  id="chart-change-in-oi"> </canvas>
+    <br />
+    <br />
+    <br />
+      
+    <canvas style="height:600px;"  id="chart-put-call-ratio-chart"> </canvas>
     <br />
     <br />
     <br />
@@ -496,6 +509,46 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       };
 
       new Chart(document.getElementById("chart-put-call-ratio-chart"), config);
+
+      data = {
+        labels: allStrikePrices,
+        datasets: [
+          {
+            label: "CALL COI",
+            backgroundColor: "rgba(255,0,0,0.4)",
+            data: allCallCOIDup
+          },
+          {
+            label: "PUT COI",
+            backgroundColor: "rgba(0,255,0,0.4)",
+            data: allPutCOIDup
+          }
+        ]
+      };
+      config = {
+        type: "bar",
+        data,
+        options: {
+          responsive: false,
+          plugins: {
+            legend: {
+              position: "top",
+              align: "start",
+              labels: {
+                padding: 10
+              }
+            },
+            title: {
+              display: true,
+              text: Date(Date.now()) + " ",
+              align: "start"
+            }
+          },
+          maintainAspectRatio: false
+        }
+      };
+
+      new Chart(document.getElementById("chart-change-in-oi"), config);
 
       arrThres = new Array(xCord.length);
       arrThres.fill(0.8);
@@ -617,11 +670,11 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         CPRInvert.push(-ele);
 
         if (ele < 0.3) {
-          normPCRCPR.push(PCR[i] - 2 * ele);
+          normPCRCPR.push(PCR[i] - 2 * ele - 0.15);
         } else if (PCR[i] < 0.5) {
-          normPCRCPR.push(1.4 * PCR[i] - ele);
+          normPCRCPR.push(1.4 * PCR[i] - ele - 0.15);
         } else {
-          normPCRCPR.push(PCR[i] - ele);
+          normPCRCPR.push(PCR[i] - ele - 0.15);
         }
       });
 
@@ -675,6 +728,10 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       window.onscroll = function() {
         document.getElementById("quickLinkBand").style.opacity = "0";
+
+        if (window.scrollY < 70) {
+          window.scrollTo(0, 90);
+        }
 
         if (window.scrollY > 250) {
           if (document.getElementsByTagName("table")[0] !== undefined)
@@ -747,8 +804,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           let obj = {
             label: "Put IV" + strike,
             backgroundColor: `rgba(0,255,0,${(i + 1) / checkedIVPut.length})`,
-            data: ele.value,
-            tension: 0.5
+            data: ele.value
           };
           IVDataset.push(obj);
         }
@@ -761,8 +817,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           let obj = {
             label: "Call IV" + strike,
             backgroundColor: `rgba(255,0,0,${(i + 1) / checkedIVCall.length})`,
-            data: ele.value,
-            tension: 0.5
+            data: ele.value
           };
           IVDataset.push(obj);
         }
@@ -787,10 +842,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             },
             title: {
               display: true,
-              text:
-                Date(Date.now()) +
-                " " +
-                "Call IV decrease => Bearish     #####     Put IV decreases => Bulish",
+              text: Date(Date.now()) + " ",
               align: "start"
             }
           },
@@ -799,8 +851,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       };
 
       new Chart(document.getElementById("chart-IV"), config);
-
-      window.scrollTo(0, 120);
 
       let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
       let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
