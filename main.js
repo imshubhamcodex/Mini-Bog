@@ -1,16 +1,4 @@
 chrome.runtime.onMessage.addListener(gotMessage);
-/* Activator snippnet
-   Activate the script
-*/
-function gotMessage(message, sender, sendResponse) {
-  if (message.text === "go") {
-    console.log("Pluto Activated");
-    console.log(
-      "Made by shubhamcodex - https://github.com/imshubhamcodex/Pluto---Chain-data-Analytics"
-    );
-    runme();
-  }
-}
 
 /* Global variable use to store PCR CPR and IV data for one whole day.
   And do not orerwrite on recursion calls 
@@ -20,6 +8,89 @@ let CPR = [];
 let xCord = [];
 let checkedIVPut = [{ id: "dummy" }];
 let checkedIVCall = [{ id: "dummy" }];
+let strikePriceTrackArr = [];
+
+/* Activator snippnet
+   Activate the script
+*/
+function gotMessage(message, sender, sendResponse) {
+  if (message.text === "go") {
+    console.log("Pluto Activated");
+    console.log(
+      "Made by shubhamcodex - https://github.com/imshubhamcodex/Pluto---Chain-data-Analytics"
+    );
+    strikePriceTrackArr = JSON.parse(
+      localStorage.getItem("strikePriceTrackArr")
+    );
+    if (strikePriceTrackArr == null) {
+      let price = Number(
+        document
+          .getElementById("equity_underlyingVal")
+          .textContent.split(" ")[1]
+          .replaceAll(",", "")
+      );
+      let roundStrike = price - price % 50;
+
+      strikePriceTrackArr = [
+        {
+          price: roundStrike - 200,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike - 150,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike - 100,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike - 50,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike + 50,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike + 100,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike + 150,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike + 200,
+          valueCall: [],
+          valuePut: []
+        },
+        {
+          price: roundStrike + 250,
+          valueCall: [],
+          valuePut: []
+        }
+      ];
+      localStorage.setItem(
+        "strikePriceTrackArr",
+        JSON.stringify(strikePriceTrackArr)
+      );
+    }
+    runme();
+  }
+}
 
 /* Main entry point */
 function runme() {
@@ -97,6 +168,20 @@ function runme() {
         );
         if (testStrike === roundStrike) {
           strikeIndex = i;
+        }
+        let index = -1;
+        if (
+          strikePriceTrackArr.some(function(obj, j) {
+            if (obj.price == testStrike) {
+              index = j;
+              return true;
+            }
+          })
+        ) {
+          let coi = e.children[2].textContent.replaceAll(",", "");
+          strikePriceTrackArr[index].valueCall.push(coi);
+          coi = e.children[20].textContent.replaceAll(",", "");
+          strikePriceTrackArr[index].valuePut.push(coi);
         }
       });
 
@@ -409,6 +494,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         localStorage.removeItem("PCRxCord");
         localStorage.removeItem("checkedIVPutData");
         localStorage.removeItem("checkedIVCallData");
+        localStorage.removeItem("strikePriceTrackArr");
 
         PCR = [];
         CPR = [];
@@ -435,20 +521,21 @@ width:${change}%;background:rgba(0,255,0,${change === 100
     <br />
     <br />
     <br />
-      
-    <canvas style="height:600px;"  id="chart-put-call-ratio-chart"> </canvas>
-    <br />
-    <br />
-    <br />
-
-    <canvas style="height:600px;"  id="chart-call-put-ratio-chart"> </canvas>
-
-
-    <br />
-    <br />
-    <br />
 
     <canvas style="height:600px;"  id="chart-call-put-ratio-chart-both"> </canvas>
+
+    <br />
+    <br />
+    <br />
+
+          
+    <canvas style="height:600px;"  id="chart-coi-call"> </canvas>
+    <br />
+    <br />
+    <br />
+
+    <canvas style="height:600px;"  id="chart-coi-put"> </canvas>
+
 
     <br />
     <br />
@@ -465,25 +552,27 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       /* Threshold arr created */
       let arrThres = new Array(xCord.length);
-      arrThres.fill(1.05);
+
+      let yCordCallCOI = [];
+      let yCordPutCOI = [];
+      strikePriceTrackArr.forEach((ele, i) => {
+        let objCall = {
+          label: "Price" + ele.price,
+          backgroundColor: `rgba(255,0,0,${(i + 1) / 10})`,
+          data: ele.valueCall
+        };
+        let objPut = {
+          label: "Price" + ele.price,
+          backgroundColor: `rgba(0,255,0,${(i + 1) / 10})`,
+          data: ele.valuePut
+        };
+        yCordCallCOI.push(objCall);
+        yCordPutCOI.push(objPut);
+      });
 
       let data = {
         labels: xCord,
-        datasets: [
-          {
-            label: "Put To Call Ratio",
-            backgroundColor: "rgba(0,255,0,0.2)",
-            borderColor: "rgba(0,255,0,0.4)",
-            data: PCR,
-            tension: 0.5
-          },
-          {
-            label: "Threshold",
-            backgroundColor: "grey",
-            borderColor: "grey",
-            data: arrThres
-          }
-        ]
+        datasets: yCordCallCOI
       };
       let config = {
         type: "line",
@@ -508,7 +597,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         }
       };
 
-      new Chart(document.getElementById("chart-put-call-ratio-chart"), config);
+      new Chart(document.getElementById("chart-coi-call"), config);
 
       data = {
         labels: allStrikePrices,
@@ -554,25 +643,9 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       new Chart(document.getElementById("chart-change-in-oi"), config);
 
-      arrThres = new Array(xCord.length);
-      arrThres.fill(0.8);
       data = {
         labels: xCord,
-        datasets: [
-          {
-            label: "Call To Put Ratio",
-            backgroundColor: "rgba(255,0,0,0.2)",
-            borderColor: "rgb(255, 99, 132)",
-            data: CPR,
-            tension: 0.5
-          },
-          {
-            label: "Threshold",
-            backgroundColor: "grey",
-            borderColor: "grey",
-            data: arrThres
-          }
-        ]
+        datasets: yCordPutCOI
       };
       config = {
         type: "line",
@@ -597,7 +670,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         }
       };
 
-      new Chart(document.getElementById("chart-call-put-ratio-chart"), config);
+      new Chart(document.getElementById("chart-coi-put"), config);
 
       let arrMedian = [];
       PCR.forEach((ele, i) => {
@@ -605,9 +678,9 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       });
 
       arrThres = new Array(xCord.length);
-      arrThres.fill(0.65);
+      arrThres.fill(0.75);
       let arrThres2 = new Array(xCord.length);
-      arrThres2.fill(0.3);
+      arrThres2.fill(0.35);
 
       data = {
         labels: xCord,
@@ -634,15 +707,15 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             tension: 0.5
           },
           {
-            label: "Median Upper Threshold",
-            backgroundColor: "grey",
-            borderColor: "grey",
+            label: "Median Oversold Threshold",
+            backgroundColor: "red",
+            borderColor: "red",
             data: arrThres
           },
           {
-            label: "Median Lower Threshold",
-            backgroundColor: "grey",
-            borderColor: "grey",
+            label: "Median Undersold Threshold",
+            backgroundColor: "green",
+            borderColor: "green",
             data: arrThres2
           }
         ]
@@ -681,16 +754,16 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       CPR.forEach((ele, i) => {
         CPRInvert.push(-ele);
 
-        if (ele < 0.3 && PCR[i] > 0.6) {
-          normPCRCPR.push(PCR[i] - 2 * ele - 0.15);
-        } else if (PCR[i] <= 0.6 && ele >= 0.3) {
-          normPCRCPR.push(1.3 * PCR[i] - ele - 0.15);
+        if (PCR[i] >= 0.75) {
+          normPCRCPR.push(-1 / 2);
+        } else if (PCR[i] < 0.75 && PCR[i] > 0.5) {
+          normPCRCPR.push(-0.5 / 2);
+        } else if (PCR[i] >= 0.35 && PCR[i] < 0.4) {
+          normPCRCPR.push(+0.5 / 2);
+        } else if (PCR[i] < 0.35) {
+          normPCRCPR.push(+1 / 2);
         } else {
-          if (ele < 0.3) {
-            normPCRCPR.push(PCR[i] - 2 * ele - 0.05);
-          } else {
-            normPCRCPR.push(PCR[i] - ele - 0.15);
-          }
+          normPCRCPR.push(0);
         }
       });
 
