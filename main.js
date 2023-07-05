@@ -558,12 +558,16 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       strikePriceTrackArr.forEach((ele, i) => {
         let objCall = {
           label: "Price" + ele.price,
-          backgroundColor: `rgba(255,0,0,${(i + 1) / 10})`,
+          backgroundColor: `rgba(255,0,0,${i >= 3 && i <= 6
+            ? 1
+            : i > 6 ? (11 - i) / 10 : (i + 1) / 10})`,
           data: ele.valueCall
         };
         let objPut = {
           label: "Price" + ele.price,
-          backgroundColor: `rgba(0,255,0,${(i + 1) / 10})`,
+          backgroundColor: `rgba(0,255,0,${i >= 3 && i <= 6
+            ? 1
+            : i > 6 ? (11 - i) / 10 : (i + 1) / 10})`,
           data: ele.valuePut
         };
         yCordCallCOI.push(objCall);
@@ -672,11 +676,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       new Chart(document.getElementById("chart-coi-put"), config);
 
-      let arrMedian = [];
-      PCR.forEach((ele, i) => {
-        arrMedian.push((Number(Number(ele) + Number(CPR[i])) / 2).toFixed(2));
-      });
-
       arrThres = new Array(xCord.length);
       arrThres.fill(0.75);
       let arrThres2 = new Array(xCord.length);
@@ -700,20 +699,13 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             tension: 0.5
           },
           {
-            label: "Median",
-            backgroundColor: "black",
-            borderColor: "black",
-            data: arrMedian,
-            tension: 0.5
-          },
-          {
-            label: "Median Oversold Threshold",
+            label: "PUT Oversold Threshold",
             backgroundColor: "red",
             borderColor: "red",
             data: arrThres
           },
           {
-            label: "Median Undersold Threshold",
+            label: "PUT Undersold Threshold",
             backgroundColor: "green",
             borderColor: "green",
             data: arrThres2
@@ -756,7 +748,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
         if (PCR[i] >= 0.75) {
           normPCRCPR.push(-1 / 2);
-        } else if (PCR[i] < 0.75 && PCR[i] > 0.5) {
+        } else if (PCR[i] < 0.75 && PCR[i] > 0.6) {
           normPCRCPR.push(-0.5 / 2);
         } else if (PCR[i] >= 0.35 && PCR[i] < 0.4) {
           normPCRCPR.push(+0.5 / 2);
