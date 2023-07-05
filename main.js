@@ -886,6 +886,10 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       localStorage.setItem("checkedIVPutData", JSON.stringify(checkedIVPut));
       localStorage.setItem("checkedIVCallData", JSON.stringify(checkedIVCall));
+      localStorage.setItem(
+        "strikePriceTrackArr",
+        JSON.stringify(strikePriceTrackArr)
+      );
 
       /* Creating dataset for IV data */
       let IVDataset = [];
