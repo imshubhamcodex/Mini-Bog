@@ -178,9 +178,9 @@ function runme() {
             }
           })
         ) {
-          let coi = e.children[2].textContent.replaceAll(",", "");
+          let coi = Number(e.children[2].textContent.replaceAll(",", ""));
           strikePriceTrackArr[index].valueCall.push(coi);
-          coi = e.children[20].textContent.replaceAll(",", "");
+          coi = Number(e.children[20].textContent.replaceAll(",", ""));
           strikePriceTrackArr[index].valuePut.push(coi);
         }
       });
@@ -400,7 +400,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
               coiPerCall * 0.1 -
               (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) >=
               0 &&
-            Math.abs(coiCall / coiPut) >= 1.7
+            Math.abs(coiCall / coiPut) >= 1.4
           ) {
             e.style.backgroundColor = "rgba(255,0,0,0.2)";
           } else if (
@@ -409,7 +409,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
               coiPerCall * 0.1 -
               (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) <
               0 &&
-            Math.abs(coiPut / coiCall) >= 1.7
+            Math.abs(coiPut / coiCall) >= 1.4
           ) {
             e.style.backgroundColor = "rgba(0,255,0,0.2)";
           } else {
@@ -556,22 +556,31 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       let yCordCallCOI = [];
       let yCordPutCOI = [];
       strikePriceTrackArr.forEach((ele, i) => {
+        let colorArr = [
+          "rgba(255, 99, 132, 0.4)",
+          "rgba(255, 159, 64, 0.4)",
+          "rgba(255, 205, 86, 0.4)",
+          "rgba(75, 192, 192, 0.4)",
+          "rgba(54, 162, 235, 0.4)",
+          "rgba(153, 102, 255, 0.4)",
+          "rgba(201, 203, 207, 0.4)",
+          "rgba(0, 255, 0, 0.4)",
+          "rgba(0, 0, 0, 0.4)",
+          "rgba(0, 128, 128, 0.4)"
+        ];
         let objCall = {
-          label: "Price" + ele.price,
-          backgroundColor: `rgba(255,0,0,${i >= 3 && i <= 6
-            ? 1
-            : i > 6 ? (11 - i) / 10 : (i + 1) / 10})`,
+          label: "Call Price" + ele.price,
+          backgroundColor: colorArr[i],
           data: ele.valueCall
         };
         let objPut = {
-          label: "Price" + ele.price,
-          backgroundColor: `rgba(0,255,0,${i >= 3 && i <= 6
-            ? 1
-            : i > 6 ? (11 - i) / 10 : (i + 1) / 10})`,
+          label: "Put Price" + ele.price,
+          backgroundColor: colorArr[i],
           data: ele.valuePut
         };
         yCordCallCOI.push(objCall);
         yCordPutCOI.push(objPut);
+        console.log(objPut);
       });
 
       let data = {
@@ -593,7 +602,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
             },
             title: {
               display: true,
-              text: Date(Date.now()) + " ",
+              text: Date(Date.now()) + " CALL COI DATA ",
               align: "start"
             }
           },
@@ -602,6 +611,35 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       };
 
       new Chart(document.getElementById("chart-coi-call"), config);
+
+      data = {
+        labels: xCord,
+        datasets: yCordPutCOI
+      };
+      config = {
+        type: "line",
+        data,
+        options: {
+          responsive: false,
+          plugins: {
+            legend: {
+              position: "top",
+              align: "start",
+              labels: {
+                padding: 10
+              }
+            },
+            title: {
+              display: true,
+              text: Date(Date.now()) + " PUT COI DATA ",
+              align: "start"
+            }
+          },
+          maintainAspectRatio: false
+        }
+      };
+
+      new Chart(document.getElementById("chart-coi-put"), config);
 
       data = {
         labels: allStrikePrices,
@@ -646,35 +684,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       };
 
       new Chart(document.getElementById("chart-change-in-oi"), config);
-
-      data = {
-        labels: xCord,
-        datasets: yCordPutCOI
-      };
-      config = {
-        type: "line",
-        data,
-        options: {
-          responsive: false,
-          plugins: {
-            legend: {
-              position: "top",
-              align: "start",
-              labels: {
-                padding: 10
-              }
-            },
-            title: {
-              display: true,
-              text: Date(Date.now()) + " ",
-              align: "start"
-            }
-          },
-          maintainAspectRatio: false
-        }
-      };
-
-      new Chart(document.getElementById("chart-coi-put"), config);
 
       arrThres = new Array(xCord.length);
       arrThres.fill(0.75);
@@ -748,7 +757,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
         if (PCR[i] >= 0.75) {
           normPCRCPR.push(-1 / 2);
-        } else if (PCR[i] < 0.75 && PCR[i] > 0.6) {
+        } else if (PCR[i] < 0.75 && PCR[i] >= 0.6) {
           normPCRCPR.push(-0.5 / 2);
         } else if (PCR[i] >= 0.35 && PCR[i] < 0.4) {
           normPCRCPR.push(+0.5 / 2);
