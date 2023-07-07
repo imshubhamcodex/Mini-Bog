@@ -557,30 +557,31 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       let yCordPutCOI = [];
       strikePriceTrackArr.forEach((ele, i) => {
         let colorArr = [
-          "rgba(255, 99, 132, 0.4)",
-          "rgba(255, 159, 64, 0.4)",
-          "rgba(255, 205, 86, 0.4)",
-          "rgba(75, 192, 192, 0.4)",
-          "rgba(54, 162, 235, 0.4)",
-          "rgba(153, 102, 255, 0.4)",
-          "rgba(201, 203, 207, 0.4)",
-          "rgba(0, 255, 0, 0.4)",
-          "rgba(0, 0, 0, 0.4)",
-          "rgba(0, 128, 128, 0.4)"
+          "rgba(255, 99, 132, 0.8)",
+          "rgba(255, 159, 64, 0.8)",
+          "rgba(255, 205, 86, 0.8)",
+          "rgba(75, 192, 192, 0.8)",
+          "rgba(54, 162, 235, 0.8)",
+          "rgba(153, 102, 255, 0.8)",
+          "rgba(201, 203, 207, 0.8)",
+          "rgba(0, 255, 0, 0.8)",
+          "rgba(0, 0, 0, 0.8)",
+          "rgba(0, 128, 128, 0.8)"
         ];
         let objCall = {
           label: "Call Price" + ele.price,
           backgroundColor: colorArr[i],
+          borderColor: colorArr[i],
           data: ele.valueCall
         };
         let objPut = {
           label: "Put Price" + ele.price,
           backgroundColor: colorArr[i],
+          borderColor: colorArr[i],
           data: ele.valuePut
         };
         yCordCallCOI.push(objCall);
         yCordPutCOI.push(objPut);
-        console.log(objPut);
       });
 
       let data = {
@@ -885,8 +886,16 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         );
       };
 
-      localStorage.setItem("checkedIVPutData", JSON.stringify(checkedIVPut));
-      localStorage.setItem("checkedIVCallData", JSON.stringify(checkedIVCall));
+      if (checkedIVPut.length > 1) {
+        localStorage.setItem("checkedIVPutData", JSON.stringify(checkedIVPut));
+      }
+      if (checkedIVCall.length > 1) {
+        localStorage.setItem(
+          "checkedIVCallData",
+          JSON.stringify(checkedIVCall)
+        );
+      }
+
       localStorage.setItem(
         "strikePriceTrackArr",
         JSON.stringify(strikePriceTrackArr)
@@ -901,6 +910,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           let obj = {
             label: "Put IV" + strike,
             backgroundColor: `rgba(0,255,0,${(i + 1) / checkedIVPut.length})`,
+            borderColor: `rgba(0,255,0,${(i + 1) / checkedIVPut.length})`,
             data: ele.value
           };
           IVDataset.push(obj);
@@ -914,6 +924,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           let obj = {
             label: "Call IV" + strike,
             backgroundColor: `rgba(255,0,0,${(i + 1) / checkedIVCall.length})`,
+            borderColor: `rgba(255,0,0,${(i + 1) / checkedIVCall.length})`,
             data: ele.value
           };
           IVDataset.push(obj);
@@ -951,6 +962,10 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
       let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
+
+      if ((hr >= 23 && minutes >= 30) || (hr <= 9 && minutes <= 15)) {
+        console.log("Not a good Time");
+      }
 
       if ((hr >= 15 && minutes >= 30) || (hr <= 9 && minutes <= 10)) {
         console.log("Not a good Time");
