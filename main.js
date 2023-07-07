@@ -568,14 +568,15 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           "rgba(0, 0, 0, 0.8)",
           "rgba(0, 128, 128, 0.8)"
         ];
+        
         let objCall = {
-          label: "Call Price" + ele.price,
+          label: "Call Price " + ele.price,
           backgroundColor: colorArr[i],
           borderColor: colorArr[i],
           data: ele.valueCall
         };
         let objPut = {
-          label: "Put Price" + ele.price,
+          label: "Put Price " + ele.price,
           backgroundColor: colorArr[i],
           borderColor: colorArr[i],
           data: ele.valuePut
@@ -584,6 +585,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         yCordPutCOI.push(objPut);
       });
 
+      
       let data = {
         labels: xCord,
         datasets: yCordCallCOI
