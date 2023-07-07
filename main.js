@@ -756,14 +756,30 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       CPR.forEach((ele, i) => {
         CPRInvert.push(-ele);
 
-        if (PCR[i] >= 0.75) {
-          normPCRCPR.push(-1 / 2);
-        } else if (PCR[i] < 0.75 && PCR[i] >= 0.6) {
-          normPCRCPR.push(-0.5 / 2);
-        } else if (PCR[i] >= 0.35 && PCR[i] < 0.4) {
-          normPCRCPR.push(+0.5 / 2);
-        } else if (PCR[i] < 0.35) {
+        // if (PCR[i] >= 0.75) {
+        //   normPCRCPR.push(-1 / 2);
+        // } else if (PCR[i] < 0.75 && PCR[i] >= 0.6) {
+        //   normPCRCPR.push(-0.5 / 2);
+        // } else if (PCR[i] >= 0.35 && PCR[i] < 0.4) {
+        //   normPCRCPR.push(+0.5 / 2);
+        // } else if (PCR[i] < 0.35) {
+        //   normPCRCPR.push(+1 / 2);
+        // } else {
+        //   normPCRCPR.push(0);
+        // }
+
+        if (PCR[i] < 0.18) {
           normPCRCPR.push(+1 / 2);
+        } else if (PCR[i] >= 0.18 && PCR[i] < 0.35) {
+          normPCRCPR.push(-0.5 / 2);
+        } else if (PCR[i] <= 0.47 && PCR[i] >= 0.35) {
+          normPCRCPR.push(-1 / 2);
+        } else if (PCR[i] > 0.67 && PCR[i] < 0.77) {
+          normPCRCPR.push(+1 / 2);
+        } else if (PCR[i] >= 0.77 && PCR[i] < 0.9) {
+          normPCRCPR.push(0.5 / 2);
+        } else if (PCR[i] >= 0.9) {
+          normPCRCPR.push(-1 / 2);
         } else {
           normPCRCPR.push(0);
         }
