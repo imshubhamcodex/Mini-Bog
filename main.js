@@ -555,6 +555,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       let yCordCallCOI = [];
       let yCordPutCOI = [];
+
       strikePriceTrackArr.forEach((ele, i) => {
         let colorArr = [
           "rgba(255, 99, 132, 0.8)",
@@ -568,7 +569,12 @@ width:${change}%;background:rgba(0,255,0,${change === 100
           "rgba(0, 0, 0, 0.8)",
           "rgba(0, 128, 128, 0.8)"
         ];
-        
+
+        if (ele.valueCall.length > xCord.length) {
+          ele.valueCall = ele.valueCall.slice(xCord.length - 1);
+          ele.valuePut = ele.valuePut.slice(xCord.length - 1);
+        }
+
         let objCall = {
           label: "Call Price " + ele.price,
           backgroundColor: colorArr[i],
@@ -585,7 +591,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         yCordPutCOI.push(objPut);
       });
 
-      
       let data = {
         labels: xCord,
         datasets: yCordCallCOI
@@ -770,20 +775,28 @@ width:${change}%;background:rgba(0,255,0,${change === 100
         //   normPCRCPR.push(0);
         // }
 
-        if (PCR[i] < 0.18) {
+        if (PCR[i] < 0.18 && ele >= 0.85) {
           normPCRCPR.push(+1 / 2);
         } else if (PCR[i] >= 0.18 && PCR[i] < 0.35) {
           normPCRCPR.push(-0.5 / 2);
-        } else if (PCR[i] <= 0.47 && PCR[i] >= 0.35) {
+        } else if (PCR[i] <= 0.47 && PCR[i] >= 0.35 && ele >= 0.65) {
           normPCRCPR.push(-1 / 2);
-        } else if (PCR[i] > 0.67 && PCR[i] < 0.77) {
+        } else if (PCR[i] > 0.65 && PCR[i] < 0.77 && ele <= 0.2) {
           normPCRCPR.push(+1 / 2);
-        } else if (PCR[i] >= 0.77 && PCR[i] < 0.9) {
+        } else if (PCR[i] >= 0.77 && PCR[i] < 0.85) {
           normPCRCPR.push(0.5 / 2);
-        } else if (PCR[i] >= 0.9) {
+        } else if (PCR[i] >= 0.85 && PCR[i] < 1) {
+          normPCRCPR.push(-0.5 / 2);
+        } else if (PCR[i] >= 1 && ele <= 0.13) {
           normPCRCPR.push(-1 / 2);
         } else {
-          normPCRCPR.push(0);
+          if (PCR[i] <= 0.47 && PCR[i] >= 0.35 && ele < 0.65) {
+            normPCRCPR.push(0.5 / 2);
+          } else if (PCR[i] > 0.65 && PCR[i] < 0.77 && ele > 0.2) {
+            normPCRCPR.push(-0.5 / 2);
+          } else {
+            normPCRCPR.push(0);
+          }
         }
       });
 
@@ -992,6 +1005,9 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       }
     } catch (err) {
       console.log("err occured !!" + err);
+      window.location.reload();
+
+      setTimeout(runme, 1000 * 10);
     }
   }, 1000 * 6);
 }
