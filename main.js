@@ -16,12 +16,15 @@ let strikePriceTrackArr = [];
 function gotMessage(message, sender, sendResponse) {
   if (message.text === "go") {
     console.log("Pluto Activated");
+
     console.log(
       "Made by shubhamcodex - https://github.com/imshubhamcodex/Pluto---Chain-data-Analytics"
     );
+
     strikePriceTrackArr = JSON.parse(
       localStorage.getItem("strikePriceTrackArr")
     );
+
     if (strikePriceTrackArr == null) {
       let price = Number(
         document
@@ -122,7 +125,7 @@ function runme() {
 
       let header = table1.children[0].children[1];
       table1.children[0].children[0].innerHTML = `<th class="text-center" id="calls" colspan="4">CALLS</th>
-<th class="text-center" id="puts" colspan="5">PUTS</th>`;
+        <th class="text-center" id="puts" colspan="5">PUTS</th>`;
 
       /* Get todays date used to track and update localstorage data for only this whole day  */
       let dateSplitArr = Date(Date.now()).toString().split(" ");
@@ -270,10 +273,10 @@ function runme() {
 
         e.children[0].style.position = "relative";
         e.children[0].innerHTML += `<div style="position:absolute;top:2px; height:76%;
-  width:${change}%;background:rgba(255,0,0,${change === 100
+            width:${change}%;background:rgba(255,0,0,${change === 100
           ? "0.5"
           : "0.3"});z-index:999; border-top-right-radius:8px; border-bottom-right-radius:8px; ">
-&nbsp;</div>`;
+          &nbsp;</div>`;
 
         maxOI = putOIArr[0];
         oiCall = Number(e.children[6].textContent.replaceAll(",", ""));
@@ -281,10 +284,10 @@ function runme() {
 
         e.children[6].style.position = "relative";
         e.children[6].innerHTML += `<div style="position:absolute;top:2px; height:76%; right:0px;
-width:${change}%;background:rgba(0,255,0,${change === 100
+          width:${change}%;background:rgba(0,255,0,${change === 100
           ? "0.5"
           : "0.3"});z-index:999; border-top-left-radius:8px; border-bottom-left-radius:8px; ">
-&nbsp;</div>`;
+          &nbsp;</div>`;
       });
 
       /* Marking top 4 best COI as bold */
@@ -763,18 +766,6 @@ width:${change}%;background:rgba(0,255,0,${change === 100
       CPR.forEach((ele, i) => {
         CPRInvert.push(-ele);
 
-        // if (PCR[i] >= 0.75) {
-        //   normPCRCPR.push(-1 / 2);
-        // } else if (PCR[i] < 0.75 && PCR[i] >= 0.6) {
-        //   normPCRCPR.push(-0.5 / 2);
-        // } else if (PCR[i] >= 0.35 && PCR[i] < 0.4) {
-        //   normPCRCPR.push(+0.5 / 2);
-        // } else if (PCR[i] < 0.35) {
-        //   normPCRCPR.push(+1 / 2);
-        // } else {
-        //   normPCRCPR.push(0);
-        // }
-
         if (PCR[i] < 0.18 && ele >= 0.85) {
           normPCRCPR.push(+1 / 2);
         } else if (PCR[i] >= 0.18 && PCR[i] < 0.35) {
@@ -851,6 +842,7 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       new Chart(document.getElementById("chart-put-call"), config);
 
+      /*Removing Adds and fixing scroll */
       window.onscroll = function() {
         document.getElementById("quickLinkBand").style.opacity = "0";
 
@@ -864,9 +856,10 @@ width:${change}%;background:rgba(0,255,0,${change === 100
               "table"
             )[0].children[0].style.opacity = 0;
         } else {
-          document.getElementsByTagName(
-            "table"
-          )[0].children[0].style.opacity = 1;
+          if (document.getElementsByTagName("table")[0] !== undefined)
+            document.getElementsByTagName(
+              "table"
+            )[0].children[0].style.opacity = 1;
         }
       };
 
@@ -991,23 +984,36 @@ width:${change}%;background:rgba(0,255,0,${change === 100
 
       new Chart(document.getElementById("chart-IV"), config);
 
+      /*Today's date validation creation  */
       let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
       let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
 
-      if ((hr >= 23 && minutes >= 30) || (hr <= 9 && minutes <= 15)) {
-        console.log("Not a good Time");
-      }
-
-      if ((hr >= 15 && minutes >= 30) || (hr <= 9 && minutes <= 10)) {
+      if ((hr >= 15 && minutes >= 30) || (hr <= 9 && minutes < 15)) {
         console.log("Not a good Time");
       } else {
-        setTimeout(runme, 1000 * 90);
+        setTimeout(runme, 1000 * 100);
       }
+
+      /*Catch for errors and
+      Then reload whole page  */
     } catch (err) {
       console.log("err occured !!" + err);
-      window.location.reload();
-
-      setTimeout(runme, 1000 * 10);
+      reloadP();
     }
+
+    /*Start reading all data after 6 sec of refresh clicked. */
   }, 1000 * 6);
+}
+
+window.onload = function() {
+  let reloading = sessionStorage.getItem("reloading");
+  if (reloading) {
+    sessionStorage.removeItem("reloading");
+    setTimeout(runme, 1000 * 6);
+  }
+};
+
+function reloadP() {
+  sessionStorage.setItem("reloading", "true");
+  window.location.reload();
 }
