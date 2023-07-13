@@ -1099,8 +1099,8 @@ function runme() {
           callSentiment.push(0);
         }
 
-        console.log("Call Arr")
-        console.log(arr)
+        console.log("Call Arr");
+        console.log(arr);
       });
 
       let putSentiment = [];
@@ -1128,8 +1128,8 @@ function runme() {
           putSentiment.push(0);
         }
 
-        console.log("Put Arr")
-        console.log(arr)
+        console.log("Put Arr");
+        console.log(arr);
       });
 
       let hoverSentiment = [];
@@ -1176,9 +1176,9 @@ function runme() {
         }
 
         if (callSentiment[i] === 1) {
-          bulish += 22;
-        } else if (callSentiment[i] === -1) {
           bearish += 22;
+        } else if (callSentiment[i] === -1) {
+          bulish += 22;
         } else {
           neutral += 22;
         }
