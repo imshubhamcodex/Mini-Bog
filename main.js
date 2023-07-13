@@ -1098,6 +1098,9 @@ function runme() {
         } else {
           callSentiment.push(0);
         }
+
+        console.log("Call Arr")
+        console.log(arr)
       });
 
       let putSentiment = [];
@@ -1108,7 +1111,7 @@ function runme() {
         let bullIncrease = false;
         let bullDecrease = false;
 
-        if (latestPrice >= 1.2 * Number(arr[0])) {
+        if (latestPrice > 1.2 * Number(arr[0])) {
           bullIncrease = true;
         }
         if (Number(arr[0]) > 1.2 * latestPrice) {
@@ -1124,6 +1127,9 @@ function runme() {
         } else {
           putSentiment.push(0);
         }
+
+        console.log("Put Arr")
+        console.log(arr)
       });
 
       let hoverSentiment = [];
