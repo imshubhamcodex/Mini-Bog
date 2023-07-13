@@ -1082,13 +1082,11 @@ function runme() {
         let bearIncrease = false;
         let bearDecrease = false;
 
-        for (let j = 0; j < arr.length; j++) {
-          if (latestPrice >= 1.2 * arr[j]) {
-            bearIncrease = true;
-          }
-          if (arr[j] > 1.2 * latestPrice) {
-            bearDecrease = true;
-          }
+        if (latestPrice > 1.2 * Number(arr[0])) {
+          bearIncrease = true;
+        }
+        if (Number(arr[0]) > 1.2 * latestPrice) {
+          bearDecrease = true;
         }
 
         if (bearIncrease && bearDecrease) {
@@ -1110,13 +1108,11 @@ function runme() {
         let bullIncrease = false;
         let bullDecrease = false;
 
-        for (let j = 0; j < arr.length; j++) {
-          if (latestPrice >= 1.2 * arr[j]) {
-            bullIncrease = true;
-          }
-          if (arr[j] > 1.2 * latestPrice) {
-            bullDecrease = true;
-          }
+        if (latestPrice >= 1.2 * Number(arr[0])) {
+          bullIncrease = true;
+        }
+        if (Number(arr[0]) > 1.2 * latestPrice) {
+          bullDecrease = true;
         }
 
         if (bullIncrease && bullDecrease) {
