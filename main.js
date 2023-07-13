@@ -1002,6 +1002,217 @@ function runme() {
         setTimeout(runme, 1000 * 100);
       }
 
+      /* Rules */
+      let footer = document.getElementsByClassName("nav-folderized")[0]
+        .children[0].children[0];
+
+      footer.innerHTML = ``;
+
+      yCordCallCOI.forEach((ele, i) => {
+        footer.innerHTML += `<div class="col-md-3" style="height:250px; margin-top:50px;margin-bottom:50px;"><h6 style="text-align:center;">PRICE: ${ele.label.split(
+          " "
+        )[2]}</h6><canvas style="float:left;height:250px;" id="donut${ele.label.split(
+          " "
+        )[2]}"></canvas> </div>`;
+      });
+      let arrHoverSentiment = [];
+      Array.from(element).forEach((e, i) => {
+        if (i === 0 || i == 1 || i === element.length - 1) {
+          return;
+        }
+
+        let oiCall = e.children[0].textContent.replaceAll(",", "");
+        let coiCall = e.children[1].textContent
+          .split(" ")[0]
+          .replaceAll(",", "");
+        let coiPerCall = e.children[1].textContent
+          .split(" ")[1]
+          .split(")")[0]
+          .replaceAll(/[(%]/g, "");
+
+        let oiPut = e.children[6].textContent.replaceAll(",", "");
+        let coiPut = e.children[5].textContent
+          .split(" ")[0]
+          .replaceAll(",", "");
+        let coiPerPut = e.children[5].textContent
+          .split(" ")[1]
+          .split(")")[0]
+          .replaceAll(/[(%]/g, "");
+
+        if (
+          oiCall * 0.3 +
+            coiCall * 0.6 +
+            coiPerCall * 0.1 -
+            (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) >=
+            0 &&
+          Math.abs(coiCall / coiPut) >= 1.4
+        ) {
+          let obj = {
+            price: e.children[3].textContent.replaceAll(",", ""),
+            type: "bearish"
+          };
+          arrHoverSentiment.push(obj);
+        } else if (
+          oiCall * 0.3 +
+            coiCall * 0.6 +
+            coiPerCall * 0.1 -
+            (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) <
+            0 &&
+          Math.abs(coiPut / coiCall) >= 1.4
+        ) {
+          let obj = {
+            price: e.children[3].textContent.replaceAll(",", ""),
+            type: "bulish"
+          };
+          arrHoverSentiment.push(obj);
+        } else {
+          let obj = {
+            price: e.children[3].textContent.replaceAll(",", ""),
+            type: "neutral"
+          };
+          arrHoverSentiment.push(obj);
+        }
+      });
+
+      let callSentiment = [];
+
+      yCordCallCOI.forEach(ele => {
+        let arr = ele.data.slice(-5);
+        let latestPrice = Number(arr[arr.length - 1]);
+        let bearIncrease = false;
+        let bearDecrease = false;
+
+        for (let j = 0; j < arr.length; j++) {
+          if (latestPrice >= 1.2 * arr[j]) {
+            bearIncrease = true;
+          }
+          if (arr[j] > 1.2 * latestPrice) {
+            bearDecrease = true;
+          }
+        }
+
+        if (bearIncrease && bearDecrease) {
+          callSentiment.push(0);
+        } else if (bearIncrease && !bearDecrease) {
+          callSentiment.push(+1);
+        } else if (!bearIncrease && bearDecrease) {
+          callSentiment.push(-1);
+        } else {
+          callSentiment.push(0);
+        }
+      });
+
+      let putSentiment = [];
+
+      yCordPutCOI.forEach(ele => {
+        let arr = ele.data.slice(-5);
+        let latestPrice = Number(arr[arr.length - 1]);
+        let bullIncrease = false;
+        let bullDecrease = false;
+
+        for (let j = 0; j < arr.length; j++) {
+          if (latestPrice >= 1.2 * arr[j]) {
+            bullIncrease = true;
+          }
+          if (arr[j] > 1.2 * latestPrice) {
+            bullDecrease = true;
+          }
+        }
+
+        if (bullIncrease && bullDecrease) {
+          putSentiment.push(0);
+        } else if (bullIncrease && !bullDecrease) {
+          putSentiment.push(+1);
+        } else if (!bullIncrease && bullDecrease) {
+          putSentiment.push(-1);
+        } else {
+          putSentiment.push(0);
+        }
+      });
+
+      let hoverSentiment = [];
+
+      yCordPutCOI.forEach(ele => {
+        let index = -1;
+        if (
+          arrHoverSentiment.some(function(obj, j) {
+            if (Number(obj.price) === Number(ele.label.split(" ")[2])) {
+              index = j;
+              return true;
+            }
+          })
+        ) {
+          if (arrHoverSentiment[index].type == "bulish") {
+            hoverSentiment.push(+1);
+          } else if (arrHoverSentiment[index].type == "bearish") {
+            hoverSentiment.push(-1);
+          } else {
+            hoverSentiment.push(0);
+          }
+        }
+      });
+
+      yCordCallCOI.forEach((ele, i) => {
+        let bulish = 0;
+        let bearish = 0;
+        let neutral = 0;
+
+        if (hoverSentiment[i] === 1) {
+          bulish += 26;
+        } else if (hoverSentiment[i] === -1) {
+          bearish += 26;
+        } else {
+          neutral += 26;
+        }
+
+        if (normPCRCPR[normPCRCPR.length - 1] > 0) {
+          bulish += 30;
+        } else if (normPCRCPR[normPCRCPR.length - 1] < 0) {
+          bearish += 30;
+        } else {
+          neutral += 30;
+        }
+
+        if (callSentiment[i] === 1) {
+          bulish += 22;
+        } else if (callSentiment[i] === -1) {
+          bearish += 22;
+        } else {
+          neutral += 22;
+        }
+
+        if (putSentiment[i] === 1) {
+          bulish += 22;
+        } else if (putSentiment[i] === -1) {
+          bearish += 22;
+        } else {
+          neutral += 22;
+        }
+
+        let data = {
+          labels: ["BULISH", "BEARISH", "NEUTRAL"],
+          datasets: [
+            {
+              data: [bulish, bearish, neutral],
+              backgroundColor: [
+                "rgba(0, 255, 0,0.5)",
+                "rgb(255, 99, 132)",
+                "silver"
+              ],
+              hoverOffset: 4
+            }
+          ]
+        };
+        let config = {
+          type: "doughnut",
+          data: data
+        };
+        new Chart(
+          document.getElementById("donut" + ele.label.split(" ")[2]),
+          config
+        );
+      });
+
       /*Catch for errors and
       Then reload whole page  */
     } catch (err) {
