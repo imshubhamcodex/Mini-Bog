@@ -25,7 +25,7 @@ function gotMessage(message, sender, sendResponse) {
       localStorage.getItem("strikePriceTrackArr")
     );
 
-    if (strikePriceTrackArr == null) {
+    if (strikePriceTrackArr == null || strikePriceTrackArr.length == 0) {
       let price = Number(
         document
           .getElementById("equity_underlyingVal")
@@ -99,6 +99,7 @@ function gotMessage(message, sender, sendResponse) {
 function runme() {
   /* For refresh */
   document.getElementsByClassName("refreshIcon")[0].click();
+  strikePriceTrackArr = JSON.parse(localStorage.getItem("strikePriceTrackArr"));
   /* Delay to complete the document load */
   setTimeout(() => {
     try {
@@ -576,6 +577,13 @@ function runme() {
         if (ele.valueCall.length > xCord.length) {
           ele.valueCall = ele.valueCall.slice(xCord.length - 1);
           ele.valuePut = ele.valuePut.slice(xCord.length - 1);
+        } else {
+          let len = xCord.length - ele.valueCall.length;
+
+          for (let k = 0; k < len; k++) {
+            ele.valueCall.unshift(0);
+            ele.valuePut.unshift(0);
+          }
         }
 
         let objCall = {
