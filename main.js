@@ -1082,6 +1082,11 @@ function runme() {
         let bearIncrease = false;
         let bearDecrease = false;
 
+        if (latestPrice < 0 && Number(arr[0]) < 0) {
+          latestPrice = Math.abs(latestPrice);
+          arr[0] = Math.abs(arr[0]);
+        }
+
         if (latestPrice > 1.2 * Number(arr[0])) {
           bearIncrease = true;
         }
@@ -1107,6 +1112,11 @@ function runme() {
         let latestPrice = Number(arr[arr.length - 1]);
         let bullIncrease = false;
         let bullDecrease = false;
+
+        if (latestPrice < 0 && Number(arr[0]) < 0) {
+          latestPrice = Math.abs(latestPrice);
+          arr[0] = Math.abs(arr[0]);
+        }
 
         if (latestPrice > 1.2 * Number(arr[0])) {
           bullIncrease = true;
