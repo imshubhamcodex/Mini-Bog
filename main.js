@@ -21,9 +21,25 @@ function gotMessage(message, sender, sendResponse) {
       "Made by shubhamcodex - https://github.com/imshubhamcodex/Pluto---Chain-data-Analytics"
     );
 
-    strikePriceTrackArr = JSON.parse(
-      localStorage.getItem("strikePriceTrackArr")
-    );
+    /*Today's date validation creation  */
+    let dateSplitArr = Date(Date.now()).toString().split(" ");
+    let todayDate =
+      dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3];
+
+    if (todayDate !== localStorage.getItem("PCRSavedDate")) {
+      localStorage.removeItem("PCRData");
+      localStorage.removeItem("CPRData");
+      localStorage.removeItem("PCRxCord");
+      localStorage.removeItem("checkedIVPutData");
+      localStorage.removeItem("checkedIVCallData");
+      localStorage.removeItem("strikePriceTrackArr");
+      localStorage.removeItem("PCRSavedDate");
+      localStorage.setItem("PCRSavedDate", todayDate);
+    } else {
+      strikePriceTrackArr = JSON.parse(
+        localStorage.getItem("strikePriceTrackArr")
+      );
+    }
 
     if (strikePriceTrackArr == null || strikePriceTrackArr.length == 0) {
       let price = Number(
@@ -130,7 +146,7 @@ function runme() {
 
       /* Get todays date used to track and update localstorage data for only this whole day  */
       let dateSplitArr = Date(Date.now()).toString().split(" ");
-      let todatDate =
+      let todayDate =
         dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3];
 
       /* Removing other unimportant elements from headers*/
@@ -489,37 +505,21 @@ function runme() {
       xCord.push(Date(Date.now()).toString().split(" ")[4]);
 
       /* Removing PCR CPR IV data if date does NOT match */
-      if (
-        todatDate !== localStorage.getItem("PCRSavedDate") &&
-        localStorage.getItem("PCRSavedDate") !== null
-      ) {
-        localStorage.removeItem("PCRData");
-        localStorage.removeItem("CPRData");
-        localStorage.removeItem("PCRxCord");
-        localStorage.removeItem("checkedIVPutData");
-        localStorage.removeItem("checkedIVCallData");
-        localStorage.removeItem("strikePriceTrackArr");
-
-        PCR = [];
-        CPR = [];
-        xCord = [];
+      if (todayDate !== localStorage.getItem("PCRSavedDate")) {
         PCR.push((top5PutCOI / (2.5 * top5CallCOI)).toFixed(2));
         CPR.push((top5CallCOI / (2.5 * top5PutCOI)).toFixed(2));
         xCord.push(Date(Date.now()).toString().split(" ")[4]);
-        localStorage.setItem(
-          "PCRSavedDate",
-          dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3]
-        );
       } else {
         localStorage.setItem("PCRData", JSON.stringify(PCR));
         localStorage.setItem("CPRData", JSON.stringify(CPR));
         localStorage.setItem("PCRxCord", JSON.stringify(xCord));
-        localStorage.setItem(
-          "PCRSavedDate",
-          dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3]
-        );
       }
-      /* Chart Plot segement */
+
+      /* 
+    
+    Chart Plot segement 
+    
+    */
       document.getElementById("EqNote").innerHTML = `
       <canvas style="height:600px;"  id="chart-change-in-oi"> </canvas>
     <br />
@@ -1098,9 +1098,6 @@ function runme() {
         } else {
           callSentiment.push(0);
         }
-
-        console.log("Call Arr");
-        console.log(arr);
       });
 
       let putSentiment = [];
@@ -1127,9 +1124,6 @@ function runme() {
         } else {
           putSentiment.push(0);
         }
-
-        console.log("Put Arr");
-        console.log(arr);
       });
 
       let hoverSentiment = [];
