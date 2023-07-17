@@ -1233,7 +1233,7 @@ function runme() {
 window.onload = function() {
   document.getElementById(
     "optChainCont"
-  ).innerHTML += `<div id="EqNoteMade"></div>`;
+  ).innerHTML += `<div style="padding-left:65px" id="EqNoteMade"></div>`;
   let reloading = sessionStorage.getItem("reloading");
   if (reloading) {
     sessionStorage.removeItem("reloading");
