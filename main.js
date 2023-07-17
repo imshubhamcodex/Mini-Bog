@@ -520,7 +520,7 @@ function runme() {
     Chart Plot segement 
     
     */
-      document.getElementById("EqNote").innerHTML = `
+      document.getElementById("EqNoteMade").innerHTML = `
       <canvas style="height:600px;"  id="chart-change-in-oi"> </canvas>
     <br />
     <br />
@@ -1231,6 +1231,9 @@ function runme() {
 }
 
 window.onload = function() {
+  document.getElementById(
+    "optChainCont"
+  ).innerHTML += `<div id="EqNoteMade"></div>`;
   let reloading = sessionStorage.getItem("reloading");
   if (reloading) {
     sessionStorage.removeItem("reloading");
