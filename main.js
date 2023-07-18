@@ -120,6 +120,7 @@ function runme() {
   setTimeout(() => {
     try {
       /* Removing unnecassy UI elements */
+      document.getElementById("OptionChainEquityCMSNote").style.display = "none";
       document.getElementsByClassName(
         "container top_logomenu"
       )[0].style.display =
