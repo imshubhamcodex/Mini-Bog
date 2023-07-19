@@ -1246,3 +1246,11 @@ function reloadP() {
   sessionStorage.setItem("reloading", "true");
   window.location.reload();
 }
+
+
+/* Breakout Rules
+1. COI >= 2*COI
+2. OI >= OI +- 20%
+3. Backward/Forward 2 COI must be greater than 1.5 : 1 ratio
+4. PCR < 0.8 and PCR > 0.2
+*/
