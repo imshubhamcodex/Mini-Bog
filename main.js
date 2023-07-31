@@ -120,7 +120,8 @@ function runme() {
   setTimeout(() => {
     try {
       /* Removing unnecassy UI elements */
-      document.getElementById("OptionChainEquityCMSNote").style.display = "none";
+      document.getElementById("OptionChainEquityCMSNote").style.display =
+        "none";
       document.getElementsByClassName(
         "container top_logomenu"
       )[0].style.display =
@@ -551,8 +552,24 @@ function runme() {
     <br />
     <br />
     <br />
+    <br />
+
+    <canvas style="height:600px;"  id="atrChart"> </canvas>
+
+    <br />
+    <br />
+    <br />
+
+    <canvas style="height:600px;"  id="adxChart"> </canvas>
+
+    <br />
+    <br />
+    <br />
 
     <canvas style="height:600px;"  id="chart-IV"> </canvas>
+   
+
+
     `;
 
       /* Threshold arr created */
@@ -1227,6 +1244,362 @@ function runme() {
       reloadP();
     }
 
+    //Implementing ATR
+
+    function calculateTrueRange(high, low, previousClose) {
+      return Math.max(
+        high - low,
+        Math.abs(high - previousClose),
+        Math.abs(low - previousClose)
+      );
+    }
+
+    function calculateATR(data, period = 14) {
+      let atrData = [];
+
+      // Calculate the first true range
+      let firstTrueRange = calculateTrueRange(
+        data[0].High,
+        data[0].Low,
+        data[0].Close
+      );
+
+      // Set the first ATR as the first true range
+      atrData.push({ Date: data[0].Date, ATR: firstTrueRange });
+
+      for (let i = 1; i < data.length; i++) {
+        let trueRange = calculateTrueRange(
+          data[i].High,
+          data[i].Low,
+          data[i - 1].Close
+        );
+        let atr = (atrData[i - 1].ATR * (period - 1) + trueRange) / period;
+        atrData.push({ Date: data[i].Date, ATR: atr });
+      }
+
+      return atrData;
+    }
+
+    // Example usage:
+    // Assuming you have historical price data in an array of objects named 'priceData'
+    // Object structure: { Date: 'yyyy-mm-dd', Open: number, High: number, Low: number, Close: number, Volume: number }
+
+    let priceDataCall = [];
+    let priceDataPut = [];
+    xCord.forEach((ele, p) => {
+      if (p + 1 > strikePriceTrackArr[0].valueCall.length) return;
+
+      let openCall = 0;
+      let highCall = 0;
+      let lowCall = 0;
+      let closeCall = 0;
+
+      let data = 0;
+
+      strikePriceTrackArr.forEach(eachData => {
+        data = eachData;
+
+        let dataValueCall = [...data.valueCall.slice(0, p + 1)];
+        dataValueCall = dataValueCall.filter(x => x != 0);
+        if (dataValueCall.length == 0) return;
+        openCall += dataValueCall[0];
+        closeCall += dataValueCall[dataValueCall.length - 1];
+
+        dataValueCall.sort((a, b) => a - b);
+
+        lowCall += dataValueCall[0];
+        highCall += dataValueCall[dataValueCall.length - 1];
+      });
+
+      let obj = {
+        Date: ele,
+        Open: openCall / strikePriceTrackArr.length,
+        High: highCall / strikePriceTrackArr.length,
+        Low: lowCall / strikePriceTrackArr.length,
+        Close: closeCall / strikePriceTrackArr.length
+      };
+
+      if (obj.Open !== undefined) {
+        priceDataCall.push(obj);
+      } else {
+        let obj = {
+          Date: ele,
+          Open: 0,
+          High: 0,
+          Low: 0,
+          Close: 0
+        };
+        priceDataCall.push(obj);
+      }
+    });
+
+    // Calculate ATR with default period (14 days)
+    let atrData = calculateATR(priceDataCall);
+    let dates = atrData.map(item => item.Date.toString());
+    // Extract Date and ATR values for plotting
+
+    let atrValuesCall = atrData.map(item => item.ATR.toFixed(2).toString());
+
+    xCord.forEach((ele, p) => {
+      if (p + 1 > strikePriceTrackArr[0].valueCall.length) return;
+
+      let openPut = 0;
+      let closePut = 0;
+      let highPut = 0;
+      let lowPut = 0;
+
+      let data = 0;
+
+      strikePriceTrackArr.forEach(eachData => {
+        data = eachData;
+        let dataValuePut = [...data.valuePut.slice(0, p + 1)];
+        dataValuePut = dataValuePut.filter(x => x != 0);
+        if (dataValuePut.length == 0) return;
+        openPut += dataValuePut[0];
+        closePut += dataValuePut[dataValuePut.length - 1];
+
+        dataValuePut.sort((a, b) => a - b);
+
+        lowPut += dataValuePut[0];
+        highPut += dataValuePut[dataValuePut.length - 1];
+      });
+
+      let obj = {
+        Date: ele,
+        Open: openPut / strikePriceTrackArr.length,
+        High: highPut / strikePriceTrackArr.length,
+        Low: lowPut / strikePriceTrackArr.length,
+        Close: closePut / strikePriceTrackArr.length
+      };
+
+      if (obj.Open !== undefined) {
+        priceDataPut.push(obj);
+      } else {
+        let obj = {
+          Date: ele,
+          Open: 0,
+          High: 0,
+          Low: 0,
+          Close: 0
+        };
+        priceDataPut.push(obj);
+      }
+    });
+
+    atrData = calculateATR(priceDataPut);
+    let atrValuesPut = atrData.map(item => item.ATR.toFixed(2).toString());
+
+    let data = {
+      labels: dates,
+      datasets: [
+        {
+          label: "ATR - CALL",
+          backgroundColor: "rgba(255,0,0,0.3)",
+          data: atrValuesCall,
+          borderColor: "rgba(255,0,0,0.8)",
+          borderWidth: 1
+        },
+        {
+          label: "ATR - PUT",
+          backgroundColor: "rgba(0,255,0,0.3)",
+          data: atrValuesPut,
+          borderColor: "rgba(0,255,0,0.8)",
+          borderWidth: 1
+        }
+      ]
+    };
+    let config = {
+      type: "line",
+      data,
+      options: {
+        responsive: false,
+        plugins: {
+          legend: {
+            position: "top",
+            align: "start",
+            labels: {
+              padding: 10
+            }
+          },
+          title: {
+            display: true,
+            text: Date(Date.now()) + " ",
+            align: "start"
+          }
+        },
+        maintainAspectRatio: false
+      }
+    };
+
+    new Chart(document.getElementById("atrChart"), config);
+
+    // Function to calculate the Average Directional Index (ADX)
+    function calculateADX(highPrices, lowPrices, closePrices, period = 14) {
+      const trueRanges = [];
+      const directionalMovementUp = [];
+      const directionalMovementDown = [];
+
+      for (let i = 1; i < highPrices.length; i++) {
+        const trueHigh = highPrices[i] - lowPrices[i];
+        const trueLow = Math.abs(highPrices[i] - closePrices[i - 1]);
+        const trueClose = Math.abs(lowPrices[i] - closePrices[i - 1]);
+
+        const trueRange = Math.max(trueHigh, trueLow, trueClose);
+        trueRanges.push(trueRange);
+
+        const directionUp = highPrices[i] - highPrices[i - 1];
+        const directionDown = lowPrices[i - 1] - lowPrices[i];
+
+        directionalMovementUp.push(Math.max(directionUp, 0));
+        directionalMovementDown.push(Math.max(directionDown, 0));
+      }
+
+      const smoothedTrueRange = [trueRanges[0]];
+      const smoothedDirectionalMovementUp = [directionalMovementUp[0]];
+      const smoothedDirectionalMovementDown = [directionalMovementDown[0]];
+
+      for (let i = 1; i < trueRanges.length; i++) {
+        smoothedTrueRange.push(
+          (smoothedTrueRange[i - 1] * (period - 1) + trueRanges[i]) / period
+        );
+        smoothedDirectionalMovementUp.push(
+          (smoothedDirectionalMovementUp[i - 1] * (period - 1) +
+            directionalMovementUp[i]) /
+            period
+        );
+        smoothedDirectionalMovementDown.push(
+          (smoothedDirectionalMovementDown[i - 1] * (period - 1) +
+            directionalMovementDown[i]) /
+            period
+        );
+      }
+
+      const positiveDirectionalIndex = smoothedTrueRange.map(
+        (value, i) => 100 * (smoothedDirectionalMovementUp[i] / value)
+      );
+      const negativeDirectionalIndex = smoothedTrueRange.map(
+        (value, i) => 100 * (smoothedDirectionalMovementDown[i] / value)
+      );
+
+      const directionalMovementIndex = positiveDirectionalIndex.map(
+        (value, i) =>
+          100 *
+          (Math.abs(value - negativeDirectionalIndex[i]) /
+            (value + negativeDirectionalIndex[i]))
+      );
+
+      const adx = [];
+      for (let i = period - 1; i < directionalMovementIndex.length; i++) {
+        const sumDMI = directionalMovementIndex
+          .slice(i - period + 1, i + 1)
+          .reduce((sum, value) => sum + value, 0);
+        adx.push(sumDMI / period);
+      }
+
+      return adx;
+    }
+
+    // Extract Open, High, Low, and Close prices from the priceData array
+    let highPrices = priceDataCall.map(data => data.High);
+    let lowPrices = priceDataCall.map(data => data.Low);
+    let closePrices = priceDataCall.map(data => data.Close);
+
+    // Calculate ADX values
+    const adxValuesCall = calculateADX(highPrices, lowPrices, closePrices);
+
+    highPrices = priceDataPut.map(data => data.High);
+    lowPrices = priceDataPut.map(data => data.Low);
+    closePrices = priceDataPut.map(data => data.Close);
+
+    const adxValuesPut = calculateADX(highPrices, lowPrices, closePrices);
+    data = {
+      labels: Array.from({ length: adxValuesCall.length }, (_, i) => i + 14),
+      dates,
+      datasets: [
+        {
+          label: "ADX - CALL",
+          backgroundColor: "rgba(255,0,0,0.3)",
+          data: adxValuesCall,
+          borderColor: "rgba(255,0,0,0.8)",
+          borderWidth: 1
+        },
+        {
+          label: "ADX - PUT",
+          backgroundColor: "rgba(0,255,0,0.3)",
+          data: adxValuesPut,
+          borderColor: "rgba(0,255,0,0.8)",
+          borderWidth: 1
+        }
+      ]
+    };
+    config = {
+      type: "line",
+      data,
+      options: {
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Period"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "ADX Value"
+            }
+          }
+        },
+        responsive: false,
+        plugins: {
+          legend: {
+            position: "top",
+            align: "start",
+            labels: {
+              padding: 10
+            }
+          },
+          title: {
+            display: true,
+            text: Date(Date.now()) + " ",
+            align: "start"
+          }
+        },
+        maintainAspectRatio: false
+      }
+    };
+
+    new Chart(document.getElementById("adxChart"), config);
+    // const adxChart = new Chart(ctx, {
+    //   type: 'line',
+    //   data: {
+    //     labels: Array.from({ length: adxValues.length }, (_, i) => i + 14), // Labels start from 14 since we need a period of 14 to calculate ADX
+    //     datasets: [{
+    //       label: 'ADX',
+    //       data: adxValues,
+    //       borderColor: 'blue',
+    //       borderWidth: 1,
+    //       fill: false
+    //     }]
+    //   },
+    //   options: {
+    //     scales: {
+    //       x: {
+    //         title: {
+    //           display: true,
+    //           text: 'Period'
+    //         }
+    //       },
+    //       y: {
+    //         title: {
+    //           display: true,
+    //           text: 'ADX Value'
+    //         }
+    //       }
+    //     }
+    //   }
+    // });
+
     /*Start reading all data after 6 sec of refresh clicked. */
   }, 1000 * 6);
 }
@@ -1246,7 +1619,6 @@ function reloadP() {
   sessionStorage.setItem("reloading", "true");
   window.location.reload();
 }
-
 
 /* Breakout Rules
 1. COI >= 2*COI
