@@ -1570,36 +1570,7 @@ function runme() {
     };
 
     new Chart(document.getElementById("adxChart"), config);
-    // const adxChart = new Chart(ctx, {
-    //   type: 'line',
-    //   data: {
-    //     labels: Array.from({ length: adxValues.length }, (_, i) => i + 14), // Labels start from 14 since we need a period of 14 to calculate ADX
-    //     datasets: [{
-    //       label: 'ADX',
-    //       data: adxValues,
-    //       borderColor: 'blue',
-    //       borderWidth: 1,
-    //       fill: false
-    //     }]
-    //   },
-    //   options: {
-    //     scales: {
-    //       x: {
-    //         title: {
-    //           display: true,
-    //           text: 'Period'
-    //         }
-    //       },
-    //       y: {
-    //         title: {
-    //           display: true,
-    //           text: 'ADX Value'
-    //         }
-    //       }
-    //     }
-    //   }
-    // });
-
+    
     /*Start reading all data after 6 sec of refresh clicked. */
   }, 1000 * 6);
 }
