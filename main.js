@@ -1393,14 +1393,14 @@ function runme() {
       labels: dates,
       datasets: [
         {
-          label: "ATR - CALL",
+          label: "ATR - CALL(increases when volatility in CALL increases)",
           backgroundColor: "rgba(255,0,0,0.3)",
           data: atrValuesCall,
           borderColor: "rgba(255,0,0,0.8)",
           borderWidth: 1
         },
         {
-          label: "ATR - PUT",
+          label: "ATR - PUT(increases when volatility in PUT increases)",
           backgroundColor: "rgba(0,255,0,0.3)",
           data: atrValuesPut,
           borderColor: "rgba(0,255,0,0.8)",
@@ -1512,24 +1512,56 @@ function runme() {
     closePrices = priceDataPut.map(data => data.Close);
 
     const adxValuesPut = calculateADX(highPrices, lowPrices, closePrices);
+    
+    let combinedADX = [];
+    adxValuesPut.forEach((ele, i) => {
+      combinedADX.push(ele - adxValuesCall[i]);
+    });
+
+    arrThres = new Array(xCord.length);
+    arrThres.fill(55);
+    arrThres2 = new Array(xCord.length);
+    arrThres2.fill(20);
+
     data = {
       labels: Array.from({ length: adxValuesCall.length }, (_, i) => i + 14),
       dates,
       datasets: [
         {
-          label: "ADX - CALL",
+          label: "ADX - Combined",
+          backgroundColor: "rgba(0,0,0,0.3)",
+          data: combinedADX,
+          borderColor: "rgba(0,0,0,0.8)",
+          borderWidth: 1
+        },
+        {
+          label: "Above it Trend Reverse/Resistance",
           backgroundColor: "rgba(255,0,0,0.3)",
-          data: adxValuesCall,
+          data: arrThres,
           borderColor: "rgba(255,0,0,0.8)",
           borderWidth: 1
         },
         {
-          label: "ADX - PUT",
+          label: "Below it Trend Reverse/Support",
           backgroundColor: "rgba(0,255,0,0.3)",
-          data: adxValuesPut,
+          data: arrThres2,
           borderColor: "rgba(0,255,0,0.8)",
           borderWidth: 1
-        }
+        },
+        // {
+        //   label: "ADX - CALL",
+        //   backgroundColor: "rgba(255,0,0,0.3)",
+        //   data: adxValuesCall,
+        //   borderColor: "rgba(255,0,0,0.8)",
+        //   borderWidth: 1
+        // },
+        // {
+        //   label: "ADX - PUT",
+        //   backgroundColor: "rgba(0,255,0,0.3)",
+        //   data: adxValuesPut,
+        //   borderColor: "rgba(0,255,0,0.8)",
+        //   borderWidth: 1
+        // }
       ]
     };
     config = {
@@ -1570,7 +1602,7 @@ function runme() {
     };
 
     new Chart(document.getElementById("adxChart"), config);
-    
+
     /*Start reading all data after 6 sec of refresh clicked. */
   }, 1000 * 6);
 }
