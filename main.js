@@ -9,6 +9,7 @@ let xCord = [];
 let checkedIVPut = [{ id: "dummy" }];
 let checkedIVCall = [{ id: "dummy" }];
 let strikePriceTrackArr = [];
+let signalWidthArr = [];
 
 /* Activator snippnet
    Activate the script
@@ -26,6 +27,9 @@ function gotMessage(message, sender, sendResponse) {
     let todayDate =
       dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3];
 
+    let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
+    let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
+
     if (todayDate !== localStorage.getItem("PCRSavedDate")) {
       localStorage.removeItem("PCRData");
       localStorage.removeItem("CPRData");
@@ -34,11 +38,34 @@ function gotMessage(message, sender, sendResponse) {
       localStorage.removeItem("checkedIVCallData");
       localStorage.removeItem("strikePriceTrackArr");
       localStorage.removeItem("PCRSavedDate");
+      localStorage.removeItem("signalWidthArr");
+
       localStorage.setItem("PCRSavedDate", todayDate);
+    } else if (
+      todayDate === localStorage.getItem("PCRSavedDate") &&
+      (hr < 9 || (hr == 9 && minutes < 15))
+    ) {
+      localStorage.removeItem("PCRData");
+      localStorage.removeItem("CPRData");
+      localStorage.removeItem("PCRxCord");
+      localStorage.removeItem("checkedIVPutData");
+      localStorage.removeItem("checkedIVCallData");
+      localStorage.removeItem("strikePriceTrackArr");
+      localStorage.removeItem("PCRSavedDate");
+      localStorage.removeItem("signalWidthArr");
+      console.log("Not a good Time");
+
+      return;
     } else {
       strikePriceTrackArr = JSON.parse(
         localStorage.getItem("strikePriceTrackArr")
       );
+
+      signalWidthArr = JSON.parse(localStorage.getItem("signalWidthArr"));
+    }
+
+    if (signalWidthArr == null || signalWidthArr.length == 0) {
+      signalWidthArr = [];
     }
 
     if (strikePriceTrackArr == null || strikePriceTrackArr.length == 0) {
@@ -568,7 +595,11 @@ function runme() {
 
     <canvas style="height:600px;"  id="chart-IV"> </canvas>
    
+    <br />
+    <br />
+    <br />
 
+    <canvas style="height:600px;"  id="signal-history"> </canvas>
 
     `;
 
@@ -1014,8 +1045,13 @@ function runme() {
       let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
       let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
 
-      if ((hr >= 15 && minutes >= 30) || (hr <= 9 && minutes < 15)) {
+      if (
+        hr > 15 ||
+        (hr == 15 && minutes > 30) ||
+        (hr < 9 || (hr == 9 && minutes < 15))
+      ) {
         console.log("Not a good Time");
+        return;
       } else {
         setTimeout(runme, 1000 * 100);
       }
@@ -1237,371 +1273,544 @@ function runme() {
         );
       });
 
+      //Implementing ATR
+
+      function calculateTrueRange(high, low, previousClose) {
+        return Math.max(
+          high - low,
+          Math.abs(high - previousClose),
+          Math.abs(low - previousClose)
+        );
+      }
+
+      function calculateATR(data, period = 14) {
+        let atrData = [];
+
+        // Calculate the first true range
+        let firstTrueRange = calculateTrueRange(
+          data[0].High,
+          data[0].Low,
+          data[0].Close
+        );
+
+        // Set the first ATR as the first true range
+        atrData.push({ Date: data[0].Date, ATR: firstTrueRange });
+
+        for (let i = 1; i < data.length; i++) {
+          let trueRange = calculateTrueRange(
+            data[i].High,
+            data[i].Low,
+            data[i - 1].Close
+          );
+          let atr = (atrData[i - 1].ATR * (period - 1) + trueRange) / period;
+          atrData.push({ Date: data[i].Date, ATR: atr });
+        }
+
+        return atrData;
+      }
+
+      // Example usage:
+      // Assuming you have historical price data in an array of objects named 'priceData'
+      // Object structure: { Date: 'yyyy-mm-dd', Open: number, High: number, Low: number, Close: number, Volume: number }
+
+      let priceDataCall = [];
+      let priceDataPut = [];
+      xCord.forEach((ele, p) => {
+        if (p + 1 > strikePriceTrackArr[0].valueCall.length) return;
+
+        let openCall = 0;
+        let highCall = 0;
+        let lowCall = 0;
+        let closeCall = 0;
+
+        let data = 0;
+
+        strikePriceTrackArr.forEach(eachData => {
+          data = eachData;
+
+          let dataValueCall = [...data.valueCall.slice(0, p + 1)];
+          dataValueCall = dataValueCall.filter(x => x != 0);
+          if (dataValueCall.length == 0) return;
+          openCall += dataValueCall[0];
+          closeCall += dataValueCall[dataValueCall.length - 1];
+
+          dataValueCall.sort((a, b) => a - b);
+
+          lowCall += dataValueCall[0];
+          highCall += dataValueCall[dataValueCall.length - 1];
+        });
+
+        let obj = {
+          Date: ele,
+          Open: openCall / strikePriceTrackArr.length,
+          High: highCall / strikePriceTrackArr.length,
+          Low: lowCall / strikePriceTrackArr.length,
+          Close: closeCall / strikePriceTrackArr.length
+        };
+
+        if (obj.Open !== undefined) {
+          priceDataCall.push(obj);
+        } else {
+          let obj = {
+            Date: ele,
+            Open: 0,
+            High: 0,
+            Low: 0,
+            Close: 0
+          };
+          priceDataCall.push(obj);
+        }
+      });
+
+      // Calculate ATR with default period (14 days)
+      let atrData = calculateATR(priceDataCall);
+      let dates = atrData.map(item => item.Date.toString());
+      // Extract Date and ATR values for plotting
+
+      let atrValuesCall = atrData.map(item => item.ATR.toFixed(2).toString());
+
+      xCord.forEach((ele, p) => {
+        if (p + 1 > strikePriceTrackArr[0].valueCall.length) return;
+
+        let openPut = 0;
+        let closePut = 0;
+        let highPut = 0;
+        let lowPut = 0;
+
+        let data = 0;
+
+        strikePriceTrackArr.forEach(eachData => {
+          data = eachData;
+          let dataValuePut = [...data.valuePut.slice(0, p + 1)];
+          dataValuePut = dataValuePut.filter(x => x != 0);
+          if (dataValuePut.length == 0) return;
+          openPut += dataValuePut[0];
+          closePut += dataValuePut[dataValuePut.length - 1];
+
+          dataValuePut.sort((a, b) => a - b);
+
+          lowPut += dataValuePut[0];
+          highPut += dataValuePut[dataValuePut.length - 1];
+        });
+
+        let obj = {
+          Date: ele,
+          Open: openPut / strikePriceTrackArr.length,
+          High: highPut / strikePriceTrackArr.length,
+          Low: lowPut / strikePriceTrackArr.length,
+          Close: closePut / strikePriceTrackArr.length
+        };
+
+        if (obj.Open !== undefined) {
+          priceDataPut.push(obj);
+        } else {
+          let obj = {
+            Date: ele,
+            Open: 0,
+            High: 0,
+            Low: 0,
+            Close: 0
+          };
+          priceDataPut.push(obj);
+        }
+      });
+
+      atrData = calculateATR(priceDataPut);
+      let atrValuesPut = atrData.map(item => item.ATR.toFixed(2).toString());
+      let combinedATR = [];
+      atrValuesPut.forEach((ele, i) => {
+        combinedATR.push(ele - atrValuesCall[i]);
+      });
+
+      data = {
+        labels: dates,
+        datasets: [
+          {
+            label: "ATR - CALL(increases when volatility in CALL increases)",
+            backgroundColor: "rgba(255,0,0,0.3)",
+            data: atrValuesCall,
+            borderColor: "rgba(255,0,0,0.8)",
+            borderWidth: 1
+          },
+          {
+            label: "ATR - PUT(increases when volatility in PUT increases)",
+            backgroundColor: "rgba(0,255,0,0.3)",
+            data: atrValuesPut,
+            borderColor: "rgba(0,255,0,0.8)",
+            borderWidth: 1
+          },
+          {
+            label: "ATR - Net",
+            backgroundColor: "rgba(0,0,0,0.3)",
+            data: combinedATR,
+            borderColor: "rgba(0,0,0,0.8)",
+            borderWidth: 1
+          }
+        ]
+      };
+      config = {
+        type: "line",
+        data,
+        options: {
+          responsive: false,
+          plugins: {
+            legend: {
+              position: "top",
+              align: "start",
+              labels: {
+                padding: 10
+              }
+            },
+            title: {
+              display: true,
+              text: Date(Date.now()) + " ",
+              align: "start"
+            }
+          },
+          maintainAspectRatio: false
+        }
+      };
+
+      new Chart(document.getElementById("atrChart"), config);
+
+      // Function to calculate the Average Directional Index (ADX)
+      function calculateADX(highPrices, lowPrices, closePrices, period = 14) {
+        const trueRanges = [];
+        const directionalMovementUp = [];
+        const directionalMovementDown = [];
+
+        for (let i = 1; i < highPrices.length; i++) {
+          const trueHigh = highPrices[i] - lowPrices[i];
+          const trueLow = Math.abs(highPrices[i] - closePrices[i - 1]);
+          const trueClose = Math.abs(lowPrices[i] - closePrices[i - 1]);
+
+          const trueRange = Math.max(trueHigh, trueLow, trueClose);
+          trueRanges.push(trueRange);
+
+          const directionUp = highPrices[i] - highPrices[i - 1];
+          const directionDown = lowPrices[i - 1] - lowPrices[i];
+
+          directionalMovementUp.push(Math.max(directionUp, 0));
+          directionalMovementDown.push(Math.max(directionDown, 0));
+        }
+
+        const smoothedTrueRange = [trueRanges[0]];
+        const smoothedDirectionalMovementUp = [directionalMovementUp[0]];
+        const smoothedDirectionalMovementDown = [directionalMovementDown[0]];
+
+        for (let i = 1; i < trueRanges.length; i++) {
+          smoothedTrueRange.push(
+            (smoothedTrueRange[i - 1] * (period - 1) + trueRanges[i]) / period
+          );
+          smoothedDirectionalMovementUp.push(
+            (smoothedDirectionalMovementUp[i - 1] * (period - 1) +
+              directionalMovementUp[i]) /
+              period
+          );
+          smoothedDirectionalMovementDown.push(
+            (smoothedDirectionalMovementDown[i - 1] * (period - 1) +
+              directionalMovementDown[i]) /
+              period
+          );
+        }
+
+        const positiveDirectionalIndex = smoothedTrueRange.map(
+          (value, i) => 100 * (smoothedDirectionalMovementUp[i] / value)
+        );
+        const negativeDirectionalIndex = smoothedTrueRange.map(
+          (value, i) => 100 * (smoothedDirectionalMovementDown[i] / value)
+        );
+
+        const directionalMovementIndex = positiveDirectionalIndex.map(
+          (value, i) =>
+            100 *
+            (Math.abs(value - negativeDirectionalIndex[i]) /
+              (value + negativeDirectionalIndex[i]))
+        );
+
+        const adx = [];
+        for (let i = period - 1; i < directionalMovementIndex.length; i++) {
+          const sumDMI = directionalMovementIndex
+            .slice(i - period + 1, i + 1)
+            .reduce((sum, value) => sum + value, 0);
+          adx.push(sumDMI / period);
+        }
+
+        return adx;
+      }
+
+      // Extract Open, High, Low, and Close prices from the priceData array
+      let highPrices = priceDataCall.map(data => data.High);
+      let lowPrices = priceDataCall.map(data => data.Low);
+      let closePrices = priceDataCall.map(data => data.Close);
+
+      // Calculate ADX values
+      const adxValuesCall = calculateADX(highPrices, lowPrices, closePrices);
+
+      highPrices = priceDataPut.map(data => data.High);
+      lowPrices = priceDataPut.map(data => data.Low);
+      closePrices = priceDataPut.map(data => data.Close);
+
+      const adxValuesPut = calculateADX(highPrices, lowPrices, closePrices);
+
+      let combinedADX = [];
+      adxValuesPut.forEach((ele, i) => {
+        combinedADX.push((ele - adxValuesCall[i]).toFixed(2));
+      });
+
+      data = {
+        labels: Array.from({ length: adxValuesCall.length }, (_, i) => i + 14),
+        dates,
+        datasets: [
+          {
+            label: "ADX - Combined",
+            backgroundColor: "rgba(0,0,0,0.3)",
+            data: combinedADX,
+            borderColor: "rgba(0,0,0,0.8)",
+            borderWidth: 1
+          }
+        ]
+      };
+      config = {
+        type: "line",
+        data,
+        options: {
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Period"
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: "ADX Value"
+              }
+            }
+          },
+          responsive: false,
+          plugins: {
+            legend: {
+              position: "top",
+              align: "start",
+              labels: {
+                padding: 10
+              }
+            },
+            title: {
+              display: true,
+              text: Date(Date.now()) + " ",
+              align: "start"
+            }
+          },
+          maintainAspectRatio: false
+        }
+      };
+
+      new Chart(document.getElementById("adxChart"), config);
+
+      // Implementing Signal
+      let adxSignal = 0;
+      let putSignal = 0;
+      let callSignal = 0;
+
+      function checkSlope(anyPriceData, type) {
+        let slopeChanges = 0;
+        let previousSlope = 0;
+
+        for (let i = 1; i < anyPriceData.length; i++) {
+          const currentSlope = anyPriceData[i] - anyPriceData[i - 1];
+          if (
+            currentSlope !== 0 &&
+            Math.sign(currentSlope) !== Math.sign(previousSlope)
+          ) {
+            slopeChanges++;
+            if (currentSlope > 0) {
+              if (type === "adx") adxSignal = 1;
+              if (type === "put") putSignal = 1;
+              if (type === "call") callSignal = 1;
+              // console.log(
+              //   `Slope change ${slopeChanges}: Increasing data point ${anyPriceData[
+              //     i
+              //   ]}`
+              // );
+            } else if (currentSlope < 0) {
+              if (type === "adx") adxSignal = -1;
+              if (type === "put") putSignal = -1;
+              if (type === "call") callSignal = -1;
+              // console.log(
+              //   `Slope change ${slopeChanges}: Decreasing data point ${anyPriceData[
+              //     i
+              //   ]}`
+              // );
+            } else {
+              if (type === "adx") adxSignal = 0;
+              if (type === "put") putSignal = 0;
+              if (type === "call") callSignal = 0;
+              // console.log(`No Slope change data point ${anyPriceData[i]}`);
+            }
+          }
+          previousSlope = currentSlope;
+        }
+      }
+
+      const priceDataPutVal = priceDataPut.map(item => item.Close);
+      const priceDataCallVal = priceDataCall.map(item => item.Close);
+      checkSlope(priceDataPutVal, "put");
+      checkSlope(priceDataCallVal, "call");
+      checkSlope(combinedADX, "adx");
+
+      let signalWidth = 0;
+
+      if (
+        adxSignal === 1 &&
+        putSignal === 1 &&
+        callSignal <= 0 &&
+        normPCRCPR[normPCRCPR.length - 1] > 0
+      ) {
+        // console.log("100% BUY");
+        signalWidth = 100;
+      } else if (
+        adxSignal === 1 &&
+        putSignal === 1 &&
+        callSignal === 1 &&
+        normPCRCPR[normPCRCPR.length - 1] > 0
+      ) {
+        // console.log("75% BUY");
+        signalWidth = 75;
+      } else if (
+        adxSignal === -1 &&
+        putSignal <= 0 &&
+        callSignal === 1 &&
+        normPCRCPR[normPCRCPR.length - 1] < 0
+      ) {
+        // console.log("100% SELL");
+        signalWidth = 0;
+      } else if (
+        adxSignal === -1 &&
+        putSignal <= 0 &&
+        callSignal === -1 &&
+        normPCRCPR[normPCRCPR.length - 1] < 0
+      ) {
+        // console.log("75% SELL");
+        signalWidth = 25;
+      } else if (
+        adxSignal === -1 &&
+        putSignal === 1 &&
+        callSignal === -1 &&
+        normPCRCPR[normPCRCPR.length - 1] > 0
+      ) {
+        // console.log("50% SELL");
+        signalWidth = 50;
+      } else if (
+        adxSignal === -1 &&
+        putSignal === 1 &&
+        callSignal <= 0 &&
+        normPCRCPR[normPCRCPR.length - 1] >= 0
+      ) {
+        // console.log("25% SELL");
+        signalWidth = 75;
+      } else if (
+        adxSignal === 1 &&
+        putSignal <= 0 &&
+        callSignal === 1 &&
+        normPCRCPR[normPCRCPR.length - 1] < 0
+      ) {
+        // console.log("50% BUY");
+        signalWidth = 50;
+      } else if (
+        adxSignal === 1 &&
+        putSignal <= 0 &&
+        callSignal === -1 &&
+        normPCRCPR[normPCRCPR.length - 1] <= 0
+      ) {
+        // console.log("25% BUY");
+        signalWidth = 25;
+      } else {
+        // console.log("No action required.");
+        // console.log(
+        //   adxSignal,
+        //   putSignal,
+        //   callSignal,
+        //   normPCRCPR[normPCRCPR.length - 1]
+        // );
+      }
+      signalWidthArr.push(signalWidth);
+
+      localStorage.setItem("signalWidthArr", JSON.stringify(signalWidthArr));
+
+      document.getElementById("equity_optionChainTable").style.position =
+        "relative";
+      document.getElementById("equity_optionChainTable").innerHTML =
+        `<p class="bold">Predicted Sentiment</p>
+        <div style="position:absolute;top:17px; height:20px; right:0px;
+      width:${signalWidth}%;background-color:rgba(0,255,0,0.6);
+      z-index:9; margin-right:${0}%"><span style="float:right; font-weight:bold">BUY(${signalWidth})%</span></div>
+      <div style="position:absolute;top:17px; height:20px; left:0px;
+      width:${100 - signalWidth}%;background:rgba(255,0,0,0.6);
+      z-index:9;margin-left:${0}%"><span style="float:left; font-weight:bold">SELL(${100 -
+          signalWidth})%</span></div></div>
+      <p></p>
+      ` + document.getElementById("equity_optionChainTable").innerHTML;
+
+
+
+
+      data = {
+        labels: dates,
+        datasets: [
+          {
+            label: "Buy Signal Strength",
+            backgroundColor: "rgba(0,255,0,0.3)",
+            data: signalWidthArr,
+            borderColor: "rgba(0,255,0,0.8)",
+            borderWidth: 1
+          },
+        ]
+      };
+      config = {
+        type: "bar",
+        data,
+        options: {
+          responsive: false,
+          plugins: {
+            legend: {
+              position: "top",
+              align: "start",
+              labels: {
+                padding: 10
+              }
+            },
+            title: {
+              display: true,
+              text: Date(Date.now()) + " ",
+              align: "start"
+            }
+          },
+          maintainAspectRatio: false
+        }
+      };
+
+      new Chart(document.getElementById("signal-history"), config);
+
+
+
+
+
+
+
+
+
+
+
+
       /*Catch for errors and
       Then reload whole page  */
     } catch (err) {
       console.log("err occured !!" + err);
       reloadP();
     }
-
-    //Implementing ATR
-
-    function calculateTrueRange(high, low, previousClose) {
-      return Math.max(
-        high - low,
-        Math.abs(high - previousClose),
-        Math.abs(low - previousClose)
-      );
-    }
-
-    function calculateATR(data, period = 14) {
-      let atrData = [];
-
-      // Calculate the first true range
-      let firstTrueRange = calculateTrueRange(
-        data[0].High,
-        data[0].Low,
-        data[0].Close
-      );
-
-      // Set the first ATR as the first true range
-      atrData.push({ Date: data[0].Date, ATR: firstTrueRange });
-
-      for (let i = 1; i < data.length; i++) {
-        let trueRange = calculateTrueRange(
-          data[i].High,
-          data[i].Low,
-          data[i - 1].Close
-        );
-        let atr = (atrData[i - 1].ATR * (period - 1) + trueRange) / period;
-        atrData.push({ Date: data[i].Date, ATR: atr });
-      }
-
-      return atrData;
-    }
-
-    // Example usage:
-    // Assuming you have historical price data in an array of objects named 'priceData'
-    // Object structure: { Date: 'yyyy-mm-dd', Open: number, High: number, Low: number, Close: number, Volume: number }
-
-    let priceDataCall = [];
-    let priceDataPut = [];
-    xCord.forEach((ele, p) => {
-      if (p + 1 > strikePriceTrackArr[0].valueCall.length) return;
-
-      let openCall = 0;
-      let highCall = 0;
-      let lowCall = 0;
-      let closeCall = 0;
-
-      let data = 0;
-
-      strikePriceTrackArr.forEach(eachData => {
-        data = eachData;
-
-        let dataValueCall = [...data.valueCall.slice(0, p + 1)];
-        dataValueCall = dataValueCall.filter(x => x != 0);
-        if (dataValueCall.length == 0) return;
-        openCall += dataValueCall[0];
-        closeCall += dataValueCall[dataValueCall.length - 1];
-
-        dataValueCall.sort((a, b) => a - b);
-
-        lowCall += dataValueCall[0];
-        highCall += dataValueCall[dataValueCall.length - 1];
-      });
-
-      let obj = {
-        Date: ele,
-        Open: openCall / strikePriceTrackArr.length,
-        High: highCall / strikePriceTrackArr.length,
-        Low: lowCall / strikePriceTrackArr.length,
-        Close: closeCall / strikePriceTrackArr.length
-      };
-
-      if (obj.Open !== undefined) {
-        priceDataCall.push(obj);
-      } else {
-        let obj = {
-          Date: ele,
-          Open: 0,
-          High: 0,
-          Low: 0,
-          Close: 0
-        };
-        priceDataCall.push(obj);
-      }
-    });
-
-    // Calculate ATR with default period (14 days)
-    let atrData = calculateATR(priceDataCall);
-    let dates = atrData.map(item => item.Date.toString());
-    // Extract Date and ATR values for plotting
-
-    let atrValuesCall = atrData.map(item => item.ATR.toFixed(2).toString());
-
-    xCord.forEach((ele, p) => {
-      if (p + 1 > strikePriceTrackArr[0].valueCall.length) return;
-
-      let openPut = 0;
-      let closePut = 0;
-      let highPut = 0;
-      let lowPut = 0;
-
-      let data = 0;
-
-      strikePriceTrackArr.forEach(eachData => {
-        data = eachData;
-        let dataValuePut = [...data.valuePut.slice(0, p + 1)];
-        dataValuePut = dataValuePut.filter(x => x != 0);
-        if (dataValuePut.length == 0) return;
-        openPut += dataValuePut[0];
-        closePut += dataValuePut[dataValuePut.length - 1];
-
-        dataValuePut.sort((a, b) => a - b);
-
-        lowPut += dataValuePut[0];
-        highPut += dataValuePut[dataValuePut.length - 1];
-      });
-
-      let obj = {
-        Date: ele,
-        Open: openPut / strikePriceTrackArr.length,
-        High: highPut / strikePriceTrackArr.length,
-        Low: lowPut / strikePriceTrackArr.length,
-        Close: closePut / strikePriceTrackArr.length
-      };
-
-      if (obj.Open !== undefined) {
-        priceDataPut.push(obj);
-      } else {
-        let obj = {
-          Date: ele,
-          Open: 0,
-          High: 0,
-          Low: 0,
-          Close: 0
-        };
-        priceDataPut.push(obj);
-      }
-    });
-
-    atrData = calculateATR(priceDataPut);
-    let atrValuesPut = atrData.map(item => item.ATR.toFixed(2).toString());
-
-    let data = {
-      labels: dates,
-      datasets: [
-        {
-          label: "ATR - CALL(increases when volatility in CALL increases)",
-          backgroundColor: "rgba(255,0,0,0.3)",
-          data: atrValuesCall,
-          borderColor: "rgba(255,0,0,0.8)",
-          borderWidth: 1
-        },
-        {
-          label: "ATR - PUT(increases when volatility in PUT increases)",
-          backgroundColor: "rgba(0,255,0,0.3)",
-          data: atrValuesPut,
-          borderColor: "rgba(0,255,0,0.8)",
-          borderWidth: 1
-        }
-      ]
-    };
-    let config = {
-      type: "line",
-      data,
-      options: {
-        responsive: false,
-        plugins: {
-          legend: {
-            position: "top",
-            align: "start",
-            labels: {
-              padding: 10
-            }
-          },
-          title: {
-            display: true,
-            text: Date(Date.now()) + " ",
-            align: "start"
-          }
-        },
-        maintainAspectRatio: false
-      }
-    };
-
-    new Chart(document.getElementById("atrChart"), config);
-
-    // Function to calculate the Average Directional Index (ADX)
-    function calculateADX(highPrices, lowPrices, closePrices, period = 14) {
-      const trueRanges = [];
-      const directionalMovementUp = [];
-      const directionalMovementDown = [];
-
-      for (let i = 1; i < highPrices.length; i++) {
-        const trueHigh = highPrices[i] - lowPrices[i];
-        const trueLow = Math.abs(highPrices[i] - closePrices[i - 1]);
-        const trueClose = Math.abs(lowPrices[i] - closePrices[i - 1]);
-
-        const trueRange = Math.max(trueHigh, trueLow, trueClose);
-        trueRanges.push(trueRange);
-
-        const directionUp = highPrices[i] - highPrices[i - 1];
-        const directionDown = lowPrices[i - 1] - lowPrices[i];
-
-        directionalMovementUp.push(Math.max(directionUp, 0));
-        directionalMovementDown.push(Math.max(directionDown, 0));
-      }
-
-      const smoothedTrueRange = [trueRanges[0]];
-      const smoothedDirectionalMovementUp = [directionalMovementUp[0]];
-      const smoothedDirectionalMovementDown = [directionalMovementDown[0]];
-
-      for (let i = 1; i < trueRanges.length; i++) {
-        smoothedTrueRange.push(
-          (smoothedTrueRange[i - 1] * (period - 1) + trueRanges[i]) / period
-        );
-        smoothedDirectionalMovementUp.push(
-          (smoothedDirectionalMovementUp[i - 1] * (period - 1) +
-            directionalMovementUp[i]) /
-            period
-        );
-        smoothedDirectionalMovementDown.push(
-          (smoothedDirectionalMovementDown[i - 1] * (period - 1) +
-            directionalMovementDown[i]) /
-            period
-        );
-      }
-
-      const positiveDirectionalIndex = smoothedTrueRange.map(
-        (value, i) => 100 * (smoothedDirectionalMovementUp[i] / value)
-      );
-      const negativeDirectionalIndex = smoothedTrueRange.map(
-        (value, i) => 100 * (smoothedDirectionalMovementDown[i] / value)
-      );
-
-      const directionalMovementIndex = positiveDirectionalIndex.map(
-        (value, i) =>
-          100 *
-          (Math.abs(value - negativeDirectionalIndex[i]) /
-            (value + negativeDirectionalIndex[i]))
-      );
-
-      const adx = [];
-      for (let i = period - 1; i < directionalMovementIndex.length; i++) {
-        const sumDMI = directionalMovementIndex
-          .slice(i - period + 1, i + 1)
-          .reduce((sum, value) => sum + value, 0);
-        adx.push(sumDMI / period);
-      }
-
-      return adx;
-    }
-
-    // Extract Open, High, Low, and Close prices from the priceData array
-    let highPrices = priceDataCall.map(data => data.High);
-    let lowPrices = priceDataCall.map(data => data.Low);
-    let closePrices = priceDataCall.map(data => data.Close);
-
-    // Calculate ADX values
-    const adxValuesCall = calculateADX(highPrices, lowPrices, closePrices);
-
-    highPrices = priceDataPut.map(data => data.High);
-    lowPrices = priceDataPut.map(data => data.Low);
-    closePrices = priceDataPut.map(data => data.Close);
-
-    const adxValuesPut = calculateADX(highPrices, lowPrices, closePrices);
-    
-    let combinedADX = [];
-    adxValuesPut.forEach((ele, i) => {
-      combinedADX.push(ele - adxValuesCall[i]);
-    });
-
-    arrThres = new Array(xCord.length);
-    arrThres.fill(55);
-    arrThres2 = new Array(xCord.length);
-    arrThres2.fill(20);
-
-    data = {
-      labels: Array.from({ length: adxValuesCall.length }, (_, i) => i + 14),
-      dates,
-      datasets: [
-        {
-          label: "ADX - Combined",
-          backgroundColor: "rgba(0,0,0,0.3)",
-          data: combinedADX,
-          borderColor: "rgba(0,0,0,0.8)",
-          borderWidth: 1
-        },
-        {
-          label: "Above it Trend Reverse/Resistance",
-          backgroundColor: "rgba(255,0,0,0.3)",
-          data: arrThres,
-          borderColor: "rgba(255,0,0,0.8)",
-          borderWidth: 1
-        },
-        {
-          label: "Below it Trend Reverse/Support",
-          backgroundColor: "rgba(0,255,0,0.3)",
-          data: arrThres2,
-          borderColor: "rgba(0,255,0,0.8)",
-          borderWidth: 1
-        },
-        // {
-        //   label: "ADX - CALL",
-        //   backgroundColor: "rgba(255,0,0,0.3)",
-        //   data: adxValuesCall,
-        //   borderColor: "rgba(255,0,0,0.8)",
-        //   borderWidth: 1
-        // },
-        // {
-        //   label: "ADX - PUT",
-        //   backgroundColor: "rgba(0,255,0,0.3)",
-        //   data: adxValuesPut,
-        //   borderColor: "rgba(0,255,0,0.8)",
-        //   borderWidth: 1
-        // }
-      ]
-    };
-    config = {
-      type: "line",
-      data,
-      options: {
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: "Period"
-            }
-          },
-          y: {
-            title: {
-              display: true,
-              text: "ADX Value"
-            }
-          }
-        },
-        responsive: false,
-        plugins: {
-          legend: {
-            position: "top",
-            align: "start",
-            labels: {
-              padding: 10
-            }
-          },
-          title: {
-            display: true,
-            text: Date(Date.now()) + " ",
-            align: "start"
-          }
-        },
-        maintainAspectRatio: false
-      }
-    };
-
-    new Chart(document.getElementById("adxChart"), config);
 
     /*Start reading all data after 6 sec of refresh clicked. */
   }, 1000 * 6);
