@@ -1597,7 +1597,7 @@ function runme() {
             borderWidth: 1
           },
           {
-            label: "Call Signal Strength %",
+            label: "SELL Signal Strength %",
             backgroundColor: "rgba(255,0,0,0.3)",
             data: yCordsignalWidthArrCall,
             borderColor: "rgba(255,0,0,0.8)",
