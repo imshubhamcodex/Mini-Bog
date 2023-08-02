@@ -1283,7 +1283,7 @@ function runme() {
         );
       }
 
-      function calculateATR(data, period = 14) {
+      function calculateATR(data, period = 10) {
         let atrData = [];
 
         // Calculate the first true range
@@ -1474,7 +1474,7 @@ function runme() {
       new Chart(document.getElementById("atrChart"), config);
 
       // Function to calculate the Average Directional Index (ADX)
-      function calculateADX(highPrices, lowPrices, closePrices, period = 14) {
+      function calculateADX(highPrices, lowPrices, closePrices, period = 10) {
         const trueRanges = [];
         const directionalMovementUp = [];
         const directionalMovementDown = [];
@@ -1559,7 +1559,7 @@ function runme() {
       });
 
       data = {
-        labels: Array.from({ length: adxValuesCall.length }, (_, i) => i + 14),
+        labels: Array.from({ length: adxValuesCall.length }, (_, i) => i + 10),
         dates,
         datasets: [
           {
@@ -1661,7 +1661,7 @@ function runme() {
       checkSlope(priceDataCallVal, "call");
       checkSlope(combinedADX, "adx");
 
-      let signalWidth = 0;
+      let signalWidth = -1;
 
       if (
         adxSignal === 1 &&
@@ -1735,7 +1735,14 @@ function runme() {
         //   callSignal,
         //   normPCRCPR[normPCRCPR.length - 1]
         // );
+        signalWidth = -1;
       }
+
+      signalWidthArr = JSON.parse(localStorage.getItem("signalWidthArr"));
+      if (signalWidthArr == null || signalWidthArr.length == 0) {
+        signalWidthArr = [];
+      }
+
       signalWidthArr.push(signalWidth);
 
       localStorage.setItem("signalWidthArr", JSON.stringify(signalWidthArr));
@@ -1748,25 +1755,44 @@ function runme() {
       width:${signalWidth}%;background-color:rgba(0,255,0,0.6);
       z-index:9; margin-right:${0}%"><span style="float:right; font-weight:bold">BUY(${signalWidth})%</span></div>
       <div style="position:absolute;top:17px; height:20px; left:0px;
-      width:${100 - signalWidth}%;background:rgba(255,0,0,0.6);
+      width:${100 - signalWidth > 100
+        ? 0
+        : 100 - signalWidth}%;background:rgba(255,0,0,0.6);
       z-index:9;margin-left:${0}%"><span style="float:left; font-weight:bold">SELL(${100 -
           signalWidth})%</span></div></div>
       <p></p>
       ` + document.getElementById("equity_optionChainTable").innerHTML;
 
+      let yCordsignalWidthArrCall = [];
+      let yCordsignalWidthArrPut = [];
 
-
+      signalWidthArr.forEach(ele => {
+        if (ele === -1) {
+          yCordsignalWidthArrPut.push(0);
+          yCordsignalWidthArrCall.push(0);
+        } else {
+          yCordsignalWidthArrPut.push(ele);
+          yCordsignalWidthArrCall.push(-100 + ele);
+        }
+      });
 
       data = {
         labels: dates,
         datasets: [
           {
-            label: "Buy Signal Strength",
+            label: "Buy Signal Strength %",
             backgroundColor: "rgba(0,255,0,0.3)",
-            data: signalWidthArr,
+            data: yCordsignalWidthArrPut,
             borderColor: "rgba(0,255,0,0.8)",
             borderWidth: 1
           },
+          {
+            label: "Call Signal Strength %",
+            backgroundColor: "rgba(255,0,0,0.3)",
+            data: yCordsignalWidthArrCall,
+            borderColor: "rgba(255,0,0,0.8)",
+            borderWidth: 1
+          }
         ]
       };
       config = {
@@ -1793,17 +1819,6 @@ function runme() {
       };
 
       new Chart(document.getElementById("signal-history"), config);
-
-
-
-
-
-
-
-
-
-
-
 
       /*Catch for errors and
       Then reload whole page  */
