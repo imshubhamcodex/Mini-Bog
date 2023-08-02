@@ -1,13 +1,11 @@
 chrome.runtime.onMessage.addListener(gotMessage);
 
-/* Global variable use to store PCR CPR and IV data for one whole day.
+/* Global variable use to store PCR CPR data for one whole day.
   And do not orerwrite on recursion calls 
 */
 let PCR = [];
 let CPR = [];
 let xCord = [];
-let checkedIVPut = [{ id: "dummy" }];
-let checkedIVCall = [{ id: "dummy" }];
 let strikePriceTrackArr = [];
 let signalWidthArr = [];
 
@@ -34,8 +32,6 @@ function gotMessage(message, sender, sendResponse) {
       localStorage.removeItem("PCRData");
       localStorage.removeItem("CPRData");
       localStorage.removeItem("PCRxCord");
-      localStorage.removeItem("checkedIVPutData");
-      localStorage.removeItem("checkedIVCallData");
       localStorage.removeItem("strikePriceTrackArr");
       localStorage.removeItem("PCRSavedDate");
       localStorage.removeItem("signalWidthArr");
@@ -48,8 +44,6 @@ function gotMessage(message, sender, sendResponse) {
       localStorage.removeItem("PCRData");
       localStorage.removeItem("CPRData");
       localStorage.removeItem("PCRxCord");
-      localStorage.removeItem("checkedIVPutData");
-      localStorage.removeItem("checkedIVCallData");
       localStorage.removeItem("strikePriceTrackArr");
       localStorage.removeItem("PCRSavedDate");
       localStorage.removeItem("signalWidthArr");
@@ -60,12 +54,23 @@ function gotMessage(message, sender, sendResponse) {
       strikePriceTrackArr = JSON.parse(
         localStorage.getItem("strikePriceTrackArr")
       );
-
       signalWidthArr = JSON.parse(localStorage.getItem("signalWidthArr"));
+      PCR = JSON.parse(localStorage.getItem("PCRData"));
+      CPR = JSON.parse(localStorage.getItem("CPRData"));
+      xCord = JSON.parse(localStorage.getItem("PCRxCord"));
     }
 
-    if (signalWidthArr == null || signalWidthArr.length == 0) {
+    if (!signalWidthArr) {
       signalWidthArr = [];
+    }
+    if (!PCR) {
+      PCR = [];
+    }
+    if (!CPR) {
+      CPR = [];
+    }
+    if (!xCord) {
+      xCord = [];
     }
 
     if (strikePriceTrackArr == null || strikePriceTrackArr.length == 0) {
@@ -75,6 +80,7 @@ function gotMessage(message, sender, sendResponse) {
           .textContent.split(" ")[1]
           .replaceAll(",", "")
       );
+
       let roundStrike = price - price % 50;
 
       strikePriceTrackArr = [
@@ -173,21 +179,16 @@ function runme() {
       table1.children[0].children[0].innerHTML = `<th class="text-center" id="calls" colspan="4">CALLS</th>
         <th class="text-center" id="puts" colspan="5">PUTS</th>`;
 
-      /* Get todays date used to track and update localstorage data for only this whole day  */
-      let dateSplitArr = Date(Date.now()).toString().split(" ");
-      let todayDate =
-        dateSplitArr[0] + dateSplitArr[1] + dateSplitArr[2] + dateSplitArr[3];
-
       /* Removing other unimportant elements from headers*/
       Array.from(header.children).forEach((e, i) => {
         if (
           i !== 1 &&
           i !== 2 &&
-          i !== 4 &&
+          i !== 3 &&
           i !== 11 &&
           i !== 21 &&
           i !== 20 &&
-          i !== 18
+          i !== 19
         ) {
           header.removeChild(e);
         } else {
@@ -243,11 +244,11 @@ function runme() {
             if (
               j !== 1 &&
               j !== 2 &&
-              j !== 4 &&
+              j !== 3 &&
               j !== 11 &&
               j !== 21 &&
               j !== 20 &&
-              j !== 18
+              j !== 19
             ) {
               e.removeChild(ele);
             } else {
@@ -262,14 +263,45 @@ function runme() {
       });
 
       let allStrikePrices = [];
-      /* Adding checkbox in IV column */
+      let max1Call = -999;
+      let max2Call = -998;
+      let max1Put = -999;
+      let max2Put = -998;
+      let max1IndexCall = -1;
+      let max2IndexCall = -1;
+      let max1IndexPut = -1;
+      let max2IndexPut = -1;
+
       Array.from(body.children).forEach((e, i) => {
-        e.children[4].innerHTML += `<input style="float:right;" type="checkbox" id="IVP${i}"  value="${e
-          .children[4].textContent}">`;
-        e.children[2].innerHTML += `<input style="float:right;" type="checkbox" id="IVC${i}"  value="${e
-          .children[2].textContent}">`;
         allStrikePrices.push(e.children[3].textContent);
+
+        let num = Number(e.children[2].textContent.replaceAll(",", ""));
+        if (num > max1Call) {
+          max2Call = max1Call;
+          max2IndexCall = max1IndexCall;
+          max1Call = num;
+          max1IndexCall = i;
+        } else if (num > max2Call && num !== max1Call) {
+          max2Call = num;
+          max2IndexCall = i;
+        }
+
+        num = Number(e.children[4].textContent.replaceAll(",", ""));
+        if (num > max1Put) {
+          max2Put = max1Put;
+          max2IndexPut = max1IndexPut;
+          max1Put = num;
+          max1IndexPut = i;
+        } else if (num > max2Put && num !== max1Put) {
+          max2Put = num;
+          max2IndexPut = i;
+        }
       });
+
+      body.children[max1IndexCall].children[2].style.fontWeight = "bold";
+      body.children[max2IndexCall].children[2].style.fontWeight = "bold";
+      body.children[max1IndexPut].children[4].style.fontWeight = "bold";
+      body.children[max2IndexPut].children[4].style.fontWeight = "bold";
 
       /* Calculation change in COI percentage and adding UP DOWN marker */
       let COIArrCall = [];
@@ -415,61 +447,6 @@ function runme() {
         }
       });
 
-      /* Adding hover effect and sentiments on each strike price*/
-      let element = document.getElementsByTagName("tr");
-      Array.from(element).forEach((e, i) => {
-        e.addEventListener("mouseover", function() {
-          e.style.backgroundColor = "grey";
-
-          if (i === 0 || i === element.length - 1) {
-            return;
-          }
-
-          let oiCall = e.children[0].textContent.replaceAll(",", "");
-          let coiCall = e.children[1].textContent
-            .split(" ")[0]
-            .replaceAll(",", "");
-          let coiPerCall = e.children[1].textContent
-            .split(" ")[1]
-            .split(")")[0]
-            .replaceAll(/[(%]/g, "");
-
-          let oiPut = e.children[6].textContent.replaceAll(",", "");
-          let coiPut = e.children[5].textContent
-            .split(" ")[0]
-            .replaceAll(",", "");
-          let coiPerPut = e.children[5].textContent
-            .split(" ")[1]
-            .split(")")[0]
-            .replaceAll(/[(%]/g, "");
-
-          if (
-            oiCall * 0.3 +
-              coiCall * 0.6 +
-              coiPerCall * 0.1 -
-              (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) >=
-              0 &&
-            Math.abs(coiCall / coiPut) >= 1.4
-          ) {
-            e.style.backgroundColor = "rgba(255,0,0,0.2)";
-          } else if (
-            oiCall * 0.3 +
-              coiCall * 0.6 +
-              coiPerCall * 0.1 -
-              (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) <
-              0 &&
-            Math.abs(coiPut / coiCall) >= 1.4
-          ) {
-            e.style.backgroundColor = "rgba(0,255,0,0.2)";
-          } else {
-            e.style.backgroundColor = "silver";
-          }
-        });
-        e.addEventListener("mouseout", function() {
-          e.style.backgroundColor = "initial";
-        });
-      });
-
       document.getElementById(
         "equityOptionChainTotalRow-PE-totVol"
       ).style.display =
@@ -492,32 +469,6 @@ function runme() {
         : "PUTS Combined PCR: " +
           Math.abs(top5PutCOI / (2.5 * top5CallCOI)).toFixed(2)}</th>`;
 
-      /* Saving and fetching IV data from in localstorage  */
-
-      if (localStorage.getItem("checkedIVPutData") !== null) {
-        checkedIVPut = JSON.parse(localStorage.getItem("checkedIVPutData"));
-        checkedIVCall = JSON.parse(localStorage.getItem("checkedIVCallData"));
-      } else {
-        checkedIVPut = [{ id: "dummy" }];
-        checkedIVCall = [{ id: "dummy" }];
-      }
-
-      checkedIVPut.forEach(e => {
-        if (e.id !== "dummy") {
-          document.getElementById(e.id).checked = true;
-          let newIV = document.getElementById(e.id).parentNode.textContent;
-          e.value.push(Number(newIV));
-        }
-      });
-
-      checkedIVCall.forEach(e => {
-        if (e.id !== "dummy") {
-          document.getElementById(e.id).checked = true;
-          let newIV = document.getElementById(e.id).parentNode.textContent;
-          e.value.push(Number(newIV));
-        }
-      });
-
       /* Saving and fetching PCR CPR data in from localstorage */
       if (localStorage.getItem("PCRData") !== null) {
         PCR = JSON.parse(localStorage.getItem("PCRData"));
@@ -533,21 +484,12 @@ function runme() {
       CPR.push((top5CallCOI / (2.5 * top5PutCOI)).toFixed(2));
       xCord.push(Date(Date.now()).toString().split(" ")[4]);
 
-      /* Removing PCR CPR IV data if date does NOT match */
-      if (todayDate !== localStorage.getItem("PCRSavedDate")) {
-        PCR.push((top5PutCOI / (2.5 * top5CallCOI)).toFixed(2));
-        CPR.push((top5CallCOI / (2.5 * top5PutCOI)).toFixed(2));
-        xCord.push(Date(Date.now()).toString().split(" ")[4]);
-      } else {
-        localStorage.setItem("PCRData", JSON.stringify(PCR));
-        localStorage.setItem("CPRData", JSON.stringify(CPR));
-        localStorage.setItem("PCRxCord", JSON.stringify(xCord));
-      }
+      localStorage.setItem("PCRData", JSON.stringify(PCR));
+      localStorage.setItem("CPRData", JSON.stringify(CPR));
+      localStorage.setItem("PCRxCord", JSON.stringify(xCord));
 
       /* 
-    
-    Chart Plot segement 
-    
+      Chart Plot segement 
     */
       document.getElementById("EqNoteMade").innerHTML = `
       <canvas style="height:600px;"  id="chart-change-in-oi"> </canvas>
@@ -588,12 +530,6 @@ function runme() {
     <br />
 
     <canvas style="height:600px;"  id="adxChart"> </canvas>
-
-    <br />
-    <br />
-    <br />
-
-    <canvas style="height:600px;"  id="chart-IV"> </canvas>
    
     <br />
     <br />
@@ -920,142 +856,6 @@ function runme() {
         }
       };
 
-      /* Adding and Removing IV to track for the whole day */
-      window.onclick = function(e) {
-        if (e.target.id.match(/IVC/)) {
-          if (e.target.checked) {
-            if (checkedIVCall.some(iv => iv.id !== e.target.id)) {
-              let obj = {
-                id: e.target.id,
-                value: [Number(e.target.value)]
-              };
-              checkedIVCall.push(obj);
-              console.log("IV Added: " + e.target.id);
-            }
-          } else {
-            if (checkedIVCall.some(iv => iv.id === e.target.id)) {
-              checkedIVCall = checkedIVCall.filter(
-                item => item.id !== e.target.id
-              );
-              console.log("IV Removed: " + e.target.id);
-            }
-          }
-        }
-        if (e.target.id.match(/IVP/)) {
-          if (e.target.checked) {
-            if (checkedIVPut.some(iv => iv.id !== e.target.id)) {
-              let obj = {
-                id: e.target.id,
-                value: [Number(e.target.value)]
-              };
-              checkedIVPut.push(obj);
-              console.log("IV Added: " + e.target.id);
-            }
-          } else {
-            if (checkedIVPut.some(iv => iv.id === e.target.id)) {
-              checkedIVPut = checkedIVPut.filter(
-                item => item.id !== e.target.id
-              );
-              console.log("IV Removed: " + e.target.id);
-            }
-          }
-        }
-        localStorage.setItem("checkedIVPutData", JSON.stringify(checkedIVPut));
-        localStorage.setItem(
-          "checkedIVCallData",
-          JSON.stringify(checkedIVCall)
-        );
-      };
-
-      if (checkedIVPut.length > 1) {
-        localStorage.setItem("checkedIVPutData", JSON.stringify(checkedIVPut));
-      }
-      if (checkedIVCall.length > 1) {
-        localStorage.setItem(
-          "checkedIVCallData",
-          JSON.stringify(checkedIVCall)
-        );
-      }
-
-      localStorage.setItem(
-        "strikePriceTrackArr",
-        JSON.stringify(strikePriceTrackArr)
-      );
-
-      /* Creating dataset for IV data */
-      let IVDataset = [];
-      checkedIVPut.forEach((ele, i) => {
-        if (ele.id !== "dummy") {
-          let strike = document.getElementById(ele.id).parentNode.parentNode
-            .children[3].textContent;
-          let obj = {
-            label: "Put IV" + strike,
-            backgroundColor: `rgba(0,255,0,${(i + 1) / checkedIVPut.length})`,
-            borderColor: `rgba(0,255,0,${(i + 1) / checkedIVPut.length})`,
-            data: ele.value
-          };
-          IVDataset.push(obj);
-        }
-      });
-
-      checkedIVCall.forEach((ele, i) => {
-        if (ele.id !== "dummy") {
-          let strike = document.getElementById(ele.id).parentNode.parentNode
-            .children[3].textContent;
-          let obj = {
-            label: "Call IV" + strike,
-            backgroundColor: `rgba(255,0,0,${(i + 1) / checkedIVCall.length})`,
-            borderColor: `rgba(255,0,0,${(i + 1) / checkedIVCall.length})`,
-            data: ele.value
-          };
-          IVDataset.push(obj);
-        }
-      });
-
-      data = {
-        labels: xCord,
-        datasets: IVDataset
-      };
-      config = {
-        type: "line",
-        data,
-        options: {
-          responsive: false,
-          plugins: {
-            legend: {
-              position: "top",
-              align: "start",
-              labels: {
-                padding: 10
-              }
-            },
-            title: {
-              display: true,
-              text: Date(Date.now()) + " ",
-              align: "start"
-            }
-          },
-          maintainAspectRatio: false
-        }
-      };
-
-      new Chart(document.getElementById("chart-IV"), config);
-
-      /*Today's date validation creation  */
-      let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
-      let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
-
-      if (
-        hr > 15 ||
-        (hr == 15 && minutes > 30) ||
-        (hr < 9 || (hr == 9 && minutes < 15))
-      ) {
-        console.log("Not a good Time");
-        return;
-      } else {
-        setTimeout(runme, 1000 * 100);
-      }
-
       /* Rules */
       let footer = document.getElementsByClassName("nav-folderized")[0]
         .children[0].children[0];
@@ -1070,8 +870,10 @@ function runme() {
         )[2]}"></canvas> </div>`;
       });
       let arrHoverSentiment = [];
-      Array.from(element).forEach((e, i) => {
-        if (i === 0 || i == 1 || i === element.length - 1) {
+
+      let tableRowEle = document.getElementsByTagName("tr");
+      Array.from(tableRowEle).forEach((e, i) => {
+        if (i === 0 || i == 1 || i === tableRowEle.length - 1) {
           return;
         }
 
@@ -1752,14 +1554,22 @@ function runme() {
       document.getElementById("equity_optionChainTable").innerHTML =
         `<p class="bold">Predicted Sentiment</p>
         <div style="position:absolute;top:17px; height:20px; right:0px;
-      width:${signalWidth}%;background-color:rgba(0,255,0,0.6);
-      z-index:9; margin-right:${0}%"><span style="float:right; font-weight:bold">BUY(${signalWidth})%</span></div>
+      width:${signalWidth >= 0
+        ? signalWidth
+        : 0.1}%;background-color:rgba(0,255,0,0.6);
+      z-index:9; margin-right:${0}%"><span style="float:right; font-weight:bold">BUY(${signalWidth >=
+        0
+          ? signalWidth
+          : 0})%</span></div>
       <div style="position:absolute;top:17px; height:20px; left:0px;
       width:${100 - signalWidth > 100
-        ? 0
+        ? 0.1
         : 100 - signalWidth}%;background:rgba(255,0,0,0.6);
       z-index:9;margin-left:${0}%"><span style="float:left; font-weight:bold">SELL(${100 -
-          signalWidth})%</span></div></div>
+          signalWidth >
+        100
+          ? 0
+          : 100 - signalWidth})%</span></div></div>
       <p></p>
       ` + document.getElementById("equity_optionChainTable").innerHTML;
 
@@ -1796,7 +1606,7 @@ function runme() {
         ]
       };
       config = {
-        type: "bar",
+        type: "line",
         data,
         options: {
           responsive: false,
@@ -1820,13 +1630,85 @@ function runme() {
 
       new Chart(document.getElementById("signal-history"), config);
 
+      localStorage.setItem(
+        "strikePriceTrackArr",
+        JSON.stringify(strikePriceTrackArr)
+      );
+      /*Today's date validation creation  */
+      let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
+      let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
+
+      if (
+        hr > 15 ||
+        (hr == 15 && minutes > 30) ||
+        (hr < 9 || (hr == 9 && minutes < 15))
+      ) {
+        console.log("Not a good Time");
+        return;
+      } else {
+        setTimeout(runme, 1000 * 100);
+      }
+
+      /* Adding hover effect and sentiments on each strike price*/
+      Array.from(tableRowEle).forEach((e, i) => {
+        e.addEventListener("mouseover", function() {
+          e.style.backgroundColor = "grey";
+
+          if (i === 0 || i === tableRowEle.length - 1) {
+            return;
+          }
+
+          let oiCall = e.children[0].textContent.replaceAll(",", "");
+          let coiCall = e.children[1].textContent
+            .split(" ")[0]
+            .replaceAll(",", "");
+          let coiPerCall = e.children[1].textContent
+            .split(" ")[1]
+            .split(")")[0]
+            .replaceAll(/[(%]/g, "");
+
+          let oiPut = e.children[6].textContent.replaceAll(",", "");
+          let coiPut = e.children[5].textContent
+            .split(" ")[0]
+            .replaceAll(",", "");
+          let coiPerPut = e.children[5].textContent
+            .split(" ")[1]
+            .split(")")[0]
+            .replaceAll(/[(%]/g, "");
+
+          if (
+            oiCall * 0.3 +
+              coiCall * 0.6 +
+              coiPerCall * 0.1 -
+              (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) >=
+              0 &&
+            Math.abs(coiCall / coiPut) >= 1.4
+          ) {
+            e.style.backgroundColor = "rgba(255,0,0,0.2)";
+          } else if (
+            oiCall * 0.3 +
+              coiCall * 0.6 +
+              coiPerCall * 0.1 -
+              (oiPut * 0.3 + coiPut * 0.6 + coiPerPut * 0.1) <
+              0 &&
+            Math.abs(coiPut / coiCall) >= 1.4
+          ) {
+            e.style.backgroundColor = "rgba(0,255,0,0.2)";
+          } else {
+            e.style.backgroundColor = "silver";
+          }
+        });
+        e.addEventListener("mouseout", function() {
+          e.style.backgroundColor = "initial";
+        });
+      });
+
       /*Catch for errors and
       Then reload whole page  */
     } catch (err) {
       console.log("err occured !!" + err);
-      reloadP();
+      // reloadP();
     }
-
     /*Start reading all data after 6 sec of refresh clicked. */
   }, 1000 * 6);
 }
