@@ -8,6 +8,12 @@ let CPR = [];
 let xCord = [];
 let strikePriceTrackArr = [];
 let signalWidthArr = [];
+let currPricePredictionArr = {
+  actualPrice: [],
+  predictedPrice: [0],
+  upperBand: [0],
+  lowerBand: [0]
+};
 
 /* Activator snippnet
    Activate the script
@@ -27,6 +33,12 @@ function gotMessage(message, sender, sendResponse) {
 
     let hr = Number(Date().toString().split(" ")[4].split(":")[0]);
     let minutes = Number(Date().toString().split(" ")[4].split(":")[1]);
+    let price = Number(
+      document
+        .getElementById("equity_underlyingVal")
+        .textContent.split(" ")[1]
+        .replaceAll(",", "")
+    );
 
     if (todayDate !== localStorage.getItem("PCRSavedDate")) {
       localStorage.removeItem("PCRData");
@@ -35,6 +47,7 @@ function gotMessage(message, sender, sendResponse) {
       localStorage.removeItem("strikePriceTrackArr");
       localStorage.removeItem("PCRSavedDate");
       localStorage.removeItem("signalWidthArr");
+      localStorage.removeItem("currPricePredictionArr");
 
       localStorage.setItem("PCRSavedDate", todayDate);
     } else if (
@@ -47,6 +60,8 @@ function gotMessage(message, sender, sendResponse) {
       localStorage.removeItem("strikePriceTrackArr");
       localStorage.removeItem("PCRSavedDate");
       localStorage.removeItem("signalWidthArr");
+      localStorage.removeItem("currPricePredictionArr");
+
       console.log("Not a good Time");
 
       return;
@@ -58,6 +73,9 @@ function gotMessage(message, sender, sendResponse) {
       PCR = JSON.parse(localStorage.getItem("PCRData"));
       CPR = JSON.parse(localStorage.getItem("CPRData"));
       xCord = JSON.parse(localStorage.getItem("PCRxCord"));
+      currPricePredictionArr = JSON.parse(
+        localStorage.getItem("currPricePredictionArr")
+      );
     }
 
     if (!signalWidthArr) {
@@ -72,15 +90,16 @@ function gotMessage(message, sender, sendResponse) {
     if (!xCord) {
       xCord = [];
     }
+    if (!currPricePredictionArr) {
+      currPricePredictionArr = {
+        actualPrice: [],
+        predictedPrice: [price],
+        upperBand: [price],
+        lowerBand: [price]
+      };
+    }
 
     if (strikePriceTrackArr == null || strikePriceTrackArr.length == 0) {
-      let price = Number(
-        document
-          .getElementById("equity_underlyingVal")
-          .textContent.split(" ")[1]
-          .replaceAll(",", "")
-      );
-
       let roundStrike = price - price % 50;
 
       strikePriceTrackArr = [
@@ -523,12 +542,6 @@ function runme() {
     <br />
     <br />
 
-    <canvas style="height:600px;"  id="atrChart"> </canvas>
-
-    <br />
-    <br />
-    <br />
-
     <canvas style="height:600px;"  id="adxChart"> </canvas>
    
     <br />
@@ -536,6 +549,11 @@ function runme() {
     <br />
 
     <canvas style="height:600px;"  id="signal-history"> </canvas>
+
+    <br />
+    <br />
+    <br />
+    <canvas style="height:600px;"  id="predictedChart"> </canvas>
 
     `;
 
@@ -1075,46 +1093,6 @@ function runme() {
         );
       });
 
-      //Implementing ATR
-
-      function calculateTrueRange(high, low, previousClose) {
-        return Math.max(
-          high - low,
-          Math.abs(high - previousClose),
-          Math.abs(low - previousClose)
-        );
-      }
-
-      function calculateATR(data, period = 10) {
-        let atrData = [];
-
-        // Calculate the first true range
-        let firstTrueRange = calculateTrueRange(
-          data[0].High,
-          data[0].Low,
-          data[0].Close
-        );
-
-        // Set the first ATR as the first true range
-        atrData.push({ Date: data[0].Date, ATR: firstTrueRange });
-
-        for (let i = 1; i < data.length; i++) {
-          let trueRange = calculateTrueRange(
-            data[i].High,
-            data[i].Low,
-            data[i - 1].Close
-          );
-          let atr = (atrData[i - 1].ATR * (period - 1) + trueRange) / period;
-          atrData.push({ Date: data[i].Date, ATR: atr });
-        }
-
-        return atrData;
-      }
-
-      // Example usage:
-      // Assuming you have historical price data in an array of objects named 'priceData'
-      // Object structure: { Date: 'yyyy-mm-dd', Open: number, High: number, Low: number, Close: number, Volume: number }
-
       let priceDataCall = [];
       let priceDataPut = [];
       xCord.forEach((ele, p) => {
@@ -1144,10 +1122,10 @@ function runme() {
 
         let obj = {
           Date: ele,
-          Open: openCall / strikePriceTrackArr.length,
-          High: highCall / strikePriceTrackArr.length,
-          Low: lowCall / strikePriceTrackArr.length,
-          Close: closeCall / strikePriceTrackArr.length
+          Open: openCall / (xCord.length * strikePriceTrackArr.length),
+          High: highCall / (xCord.length * strikePriceTrackArr.length),
+          Low: lowCall / (xCord.length * strikePriceTrackArr.length),
+          Close: closeCall / (xCord.length * strikePriceTrackArr.length)
         };
 
         if (obj.Open !== undefined) {
@@ -1163,13 +1141,6 @@ function runme() {
           priceDataCall.push(obj);
         }
       });
-
-      // Calculate ATR with default period (14 days)
-      let atrData = calculateATR(priceDataCall);
-      let dates = atrData.map(item => item.Date.toString());
-      // Extract Date and ATR values for plotting
-
-      let atrValuesCall = atrData.map(item => item.ATR.toFixed(2).toString());
 
       xCord.forEach((ele, p) => {
         if (p + 1 > strikePriceTrackArr[0].valueCall.length) return;
@@ -1197,10 +1168,10 @@ function runme() {
 
         let obj = {
           Date: ele,
-          Open: openPut / strikePriceTrackArr.length,
-          High: highPut / strikePriceTrackArr.length,
-          Low: lowPut / strikePriceTrackArr.length,
-          Close: closePut / strikePriceTrackArr.length
+          Open: openPut / (xCord.length * strikePriceTrackArr.length),
+          High: highPut / (xCord.length * strikePriceTrackArr.length),
+          Low: lowPut / (xCord.length * strikePriceTrackArr.length),
+          Close: closePut / (xCord.length * strikePriceTrackArr.length)
         };
 
         if (obj.Open !== undefined) {
@@ -1217,63 +1188,220 @@ function runme() {
         }
       });
 
-      atrData = calculateATR(priceDataPut);
-      let atrValuesPut = atrData.map(item => item.ATR.toFixed(2).toString());
-      let combinedATR = [];
-      atrValuesPut.forEach((ele, i) => {
-        combinedATR.push(ele - atrValuesCall[i]);
-      });
+      // Implementing Price Prediction
 
-      data = {
-        labels: dates,
-        datasets: [
-          {
-            label: "ATR - CALL(increases when volatility in CALL increases)",
-            backgroundColor: "rgba(255,0,0,0.3)",
-            data: atrValuesCall,
-            borderColor: "rgba(255,0,0,0.8)",
-            borderWidth: 1
-          },
-          {
-            label: "ATR - PUT(increases when volatility in PUT increases)",
-            backgroundColor: "rgba(0,255,0,0.3)",
-            data: atrValuesPut,
-            borderColor: "rgba(0,255,0,0.8)",
-            borderWidth: 1
-          },
-          {
-            label: "ATR - Net",
-            backgroundColor: "rgba(0,0,0,0.3)",
-            data: combinedATR,
-            borderColor: "rgba(0,0,0,0.8)",
-            borderWidth: 1
+      let currPrice = Number(
+        document
+          .getElementById("equity_underlyingVal")
+          .textContent.split(" ")[1]
+          .replaceAll(",", "")
+      );
+
+      currPricePredictionArr = JSON.parse(
+        localStorage.getItem("currPricePredictionArr")
+      );
+
+      if (!currPricePredictionArr) {
+        currPricePredictionArr = {
+          actualPrice: [],
+          predictedPrice: [currPrice],
+          upperBand: [currPrice],
+          lowerBand: [currPrice]
+        };
+      }
+      currPricePredictionArr.actualPrice.push(currPrice);
+
+      async function predictNextValue(arr) {
+        // Check if the data is constant
+        const isConstantData = arr.every(val => val === arr[0]);
+
+        let predictedValue = 0;
+        let lowerBound = 0;
+        let upperBound = 0;
+
+        if (isConstantData) {
+          // If the data is constant, fallback to using mean and standard deviation
+          let data = useFallbackPredictor(arr);
+          lowerBound = data[0];
+          predictedValue = data[1];
+          upperBound = data[2];
+        } else {
+          // Normalize the data
+          const min = Math.min(...arr);
+          const max = Math.max(...arr);
+          const normalizedArr = arr.map(val => (val - min) / (max - min));
+
+          // Prepare the input features (indices) and target values (array elements)
+          const X = tf.tensor(normalizedArr.map((_, index) => [index]));
+          const y = tf.tensor(normalizedArr);
+
+          // Reshape the input features for LSTM (input shape [samples, time steps, features])
+          const X_lstm = tf.reshape(X, [X.shape[0], 1, 1]);
+
+          // Create and train the LSTM model with improved hyperparameters and regularization
+          const model = tf.sequential();
+          model.add(
+            tf.layers.lstm({
+              units: 64,
+              inputShape: [1, 1],
+              recurrentInitializer: "glorotNormal"
+            })
+          );
+          model.add(tf.layers.dropout({ rate: 0.2 }));
+          model.add(tf.layers.dense({ units: 1 }));
+          model.compile({ loss: "meanSquaredError", optimizer: "adam" });
+
+          // Implement early stopping callback to prevent overfitting
+          const earlyStop = tf.callbacks.earlyStopping({
+            monitor: "val_loss",
+            patience: 10
+          });
+
+          const history = await model.fit(X_lstm, y, {
+            epochs: 500,
+            batch_size: 1,
+            validationSplit: 0.2,
+            callbacks: [earlyStop]
+          });
+
+          // Predict the next value
+          const nextIndex = normalizedArr.length;
+          const nextValue = model.predict(tf.tensor([[[nextIndex]]]));
+          predictedValue = nextValue.dataSync()[0] * (max - min) + min;
+
+          // Calculate the standard deviation of the residuals
+          const y_pred = model.predict(X_lstm);
+          const residuals = tf.sub(y, y_pred).square();
+          const sumResiduals = tf.sum(residuals).dataSync()[0];
+          const n = X_lstm.shape[0];
+          let standardDeviation = Math.sqrt(sumResiduals / (n - 2));
+
+          // Handle low standard deviation: if it's too low, set it to a default value
+          const minStandardDeviation = 0.000001; // Minimum standard deviation to avoid division by zero
+          if (
+            isNaN(standardDeviation) ||
+            standardDeviation < minStandardDeviation
+          ) {
+            standardDeviation = minStandardDeviation;
           }
-        ]
-      };
-      config = {
-        type: "line",
-        data,
-        options: {
-          responsive: false,
-          plugins: {
-            legend: {
-              position: "top",
-              align: "start",
-              labels: {
-                padding: 10
+
+          // Define the confidence level (e.g., 95%)
+          const confidenceLevel = 0.1; // 1.96 corresponds to 95% confidence interval
+
+          // Calculate the lower and upper bounds of the range
+          lowerBound =
+            predictedValue - confidenceLevel * standardDeviation * (max - min);
+          upperBound =
+            predictedValue + confidenceLevel * standardDeviation * (max - min);
+
+          // Don't forget to clean up the tensors
+          X.dispose();
+          y.dispose();
+          X_lstm.dispose();
+          X_train.dispose();
+          X_val.dispose();
+          y_train.dispose();
+          y_val.dispose();
+          y_pred.dispose();
+          residuals.dispose();
+          nextValue.dispose();
+        }
+
+        // console.log("Predicted next value:", predictedValue);
+        // console.log("Predicted range:", lowerBound, "to", upperBound);
+
+        currPricePredictionArr.predictedPrice.push(predictedValue);
+        currPricePredictionArr.upperBand.push(upperBound);
+        currPricePredictionArr.lowerBand.push(lowerBound);
+        localStorage.setItem(
+          "currPricePredictionArr",
+          JSON.stringify(currPricePredictionArr)
+        );
+
+        let data = {
+          labels: [...xCord, "predicted"],
+          datasets: [
+            {
+              label: "Actual Price",
+              backgroundColor: "rgba(0,0,0,1)",
+              data: currPricePredictionArr.actualPrice,
+              borderColor: "rgba(0,0,0,1)",
+              borderWidth: 1
+            },
+            {
+              label: "Predicted Price",
+              backgroundColor: "rgba(0,0,0,0.3)",
+              data: currPricePredictionArr.predictedPrice,
+              borderColor: "rgba(0,0,0,0.5)",
+              borderWidth: 1
+            },
+            {
+              label: "Predicted Upper Band",
+              backgroundColor: "rgba(0,255,0,0.3)",
+              data: currPricePredictionArr.upperBand,
+              borderColor: "rgba(0,255,0,0.5)",
+              borderWidth: 1
+            },
+            {
+              label: "Predicted Lower Band",
+              backgroundColor: "rgba(255,0,0,0.3)",
+              data: currPricePredictionArr.lowerBand,
+              borderColor: "rgba(255,0,0,0.5)",
+              borderWidth: 1
+            }
+          ]
+        };
+        config = {
+          type: "line",
+          data,
+          options: {
+            responsive: false,
+            plugins: {
+              legend: {
+                position: "top",
+                align: "start",
+                labels: {
+                  padding: 10
+                }
+              },
+              title: {
+                display: true,
+                text: Date(Date.now()) + " ",
+                align: "start"
               }
             },
-            title: {
-              display: true,
-              text: Date(Date.now()) + " ",
-              align: "start"
-            }
-          },
-          maintainAspectRatio: false
-        }
-      };
+            maintainAspectRatio: false
+          }
+        };
 
-      new Chart(document.getElementById("atrChart"), config);
+        await new Chart(document.getElementById("predictedChart"), config);
+      }
+
+      function useFallbackPredictor(arr) {
+        // Fallback to using mean and standard deviation for constant data
+        const mean = arr.reduce((acc, val) => acc + val, 0) / arr.length;
+        const standardDeviation = Math.sqrt(
+          arr.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) /
+            arr.length
+        );
+
+        // Predict the next value (using mean in this case)
+        const predictedValue = mean;
+
+        // Define the confidence level (e.g., 90%)
+        const confidenceLevel = 0.1; // 1.645 corresponds to 90% confidence interval
+
+        // Calculate the lower and upper bounds of the range
+        const lowerBound = predictedValue - confidenceLevel * standardDeviation;
+        const upperBound = predictedValue + confidenceLevel * standardDeviation;
+
+        return [lowerBound, predictedValue, upperBound];
+      }
+      predictNextValue(currPricePredictionArr.actualPrice);
+
+
+
+
 
       // Function to calculate the Average Directional Index (ADX)
       function calculateADX(highPrices, lowPrices, closePrices, period = 10) {
@@ -1362,7 +1490,7 @@ function runme() {
 
       data = {
         labels: Array.from({ length: adxValuesCall.length }, (_, i) => i + 10),
-        dates,
+        xCord,
         datasets: [
           {
             label: "ADX - Combined",
@@ -1586,8 +1714,38 @@ function runme() {
         }
       });
 
+      function replaceZeroes(arr) {
+        let consecutiveZeros = 0;
+        let prevNonZero = null;
+
+        for (let i = 0; i < arr.length; i++) {
+          if (arr[i] === 0) {
+            consecutiveZeros++;
+            if (consecutiveZeros < 4 && prevNonZero !== null) {
+              arr[i] = prevNonZero; // Replace with the previous non-zero value.
+            }
+          } else {
+            consecutiveZeros = 0; // Reset the consecutive zeros count.
+            prevNonZero = arr[i]; // Update the previous non-zero value.
+          }
+        }
+
+        return arr;
+      }
+
+      // yCordsignalWidthArrCall = replaceZeroes(yCordsignalWidthArrCall);
+      yCordsignalWidthArrPut = replaceZeroes(yCordsignalWidthArrPut);
+      yCordsignalWidthArrPut.forEach((ele, i) => {
+        if (ele === 0 && yCordsignalWidthArrCall[i] === 0) {
+        } else {
+          yCordsignalWidthArrCall[i] = -100 + ele;
+        }
+      });
+
+      yCordsignalWidthArrCall = replaceZeroes(yCordsignalWidthArrCall);
+
       data = {
-        labels: dates,
+        labels: xCord,
         datasets: [
           {
             label: "Buy Signal Strength %",
@@ -1606,7 +1764,7 @@ function runme() {
         ]
       };
       config = {
-        type: "line",
+        type: "bar",
         data,
         options: {
           responsive: false,

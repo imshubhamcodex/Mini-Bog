@@ -7,7 +7,7 @@
 			"matches" : [
 				"https://www.nseindia.com/option-chain"
 			],
-			"js" : ["main.js","chart.js"]
+			"js" : ["main.js","chart.js","tenserflow.js"]
 		}
 	],
     "background" : {
