@@ -1286,7 +1286,7 @@ function runme() {
           }
 
           // Define the confidence level (e.g., 95%)
-          const confidenceLevel = 0.05; // 1.96 corresponds to 95% confidence interval
+          const confidenceLevel = 0.1; // 1.96 corresponds to 95% confidence interval
 
           // Calculate the lower and upper bounds of the range
           lowerBound =
@@ -1303,20 +1303,45 @@ function runme() {
           nextValue.dispose();
         }
 
+        const thresholdsNegative = [
+          { lower: -30, upper: -10, adjustment: 20 },
+          { lower: -50, upper: -30, adjustment: 40 },
+          { lower: -70, upper: -50, adjustment: 60 }
+        ];
+
+        const thresholdsPositive = [
+          { lower: 10, upper: 30, adjustment: 20 },
+          { lower: 30, upper: 50, adjustment: 40 },
+          { lower: 50, upper: 70, adjustment: 60 }
+        ];
+
+        for (const threshold of thresholdsNegative) {
+          if (
+            currPrice - predictedValue > threshold.lower &&
+            currPrice - predictedValue <= threshold.upper
+          ) {
+            predictedValue -= threshold.adjustment;
+            upperBound -= threshold.adjustment;
+            lowerBound -= threshold.adjustment;
+            break;
+          }
+        }
+
+        for (const threshold of thresholdsPositive) {
+          if (
+            currPrice - predictedValue > threshold.lower &&
+            currPrice - predictedValue <= threshold.upper
+          ) {
+            predictedValue += threshold.adjustment;
+            upperBound += threshold.adjustment;
+            lowerBound += threshold.adjustment;
+            break;
+          }
+        }
+
         // console.log("Predicted next value:", predictedValue);
         // console.log("Predicted range:", lowerBound, "to", upperBound);
-
-        if (currPrice - predictedValue < -10) {
-          predictedValue = predictedValue - 20;
-          upperBound = upperBound - 20;
-          lowerBound = lowerBound - 20;
-        }
-        if (currPrice - predictedValue > 10) {
-          predictedValue = predictedValue + 20;
-          upperBound = upperBound + 20;
-          lowerBound = lowerBound + 20;
-        }
-
+        
         currPricePredictionArr.predictedPrice.push(predictedValue);
         currPricePredictionArr.upperBand.push(upperBound);
         currPricePredictionArr.lowerBand.push(lowerBound);
@@ -1396,7 +1421,7 @@ function runme() {
         const predictedValue = mean;
 
         // Define the confidence level (e.g., 90%)
-        const confidenceLevel = 0.05; // 1.645 corresponds to 90% confidence interval
+        const confidenceLevel = 0.1; // 1.645 corresponds to 90% confidence interval
 
         // Calculate the lower and upper bounds of the range
         const lowerBound = predictedValue - confidenceLevel * standardDeviation;
