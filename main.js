@@ -1286,7 +1286,7 @@ function runme() {
           }
 
           // Define the confidence level (e.g., 95%)
-          const confidenceLevel = 0.1; // 1.96 corresponds to 95% confidence interval
+          const confidenceLevel = 0.05; // 1.96 corresponds to 95% confidence interval
 
           // Calculate the lower and upper bounds of the range
           lowerBound =
@@ -1305,6 +1305,17 @@ function runme() {
 
         // console.log("Predicted next value:", predictedValue);
         // console.log("Predicted range:", lowerBound, "to", upperBound);
+
+        if (currPrice - predictedValue < -10) {
+          predictedValue = predictedValue - 20;
+          upperBound = upperBound - 20;
+          lowerBound = lowerBound - 20;
+        }
+        if (currPrice - predictedValue > 10) {
+          predictedValue = predictedValue + 20;
+          upperBound = upperBound + 20;
+          lowerBound = lowerBound + 20;
+        }
 
         currPricePredictionArr.predictedPrice.push(predictedValue);
         currPricePredictionArr.upperBand.push(upperBound);
@@ -1395,10 +1406,6 @@ function runme() {
       }
       // console.log(currPricePredictionArr)
       predictNextValue(currPricePredictionArr.actualPrice);
-
-
-
-
 
       // Function to calculate the Average Directional Index (ADX)
       function calculateADX(highPrices, lowPrices, closePrices, period = 10) {
