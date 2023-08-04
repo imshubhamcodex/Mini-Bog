@@ -1298,10 +1298,6 @@ function runme() {
           X.dispose();
           y.dispose();
           X_lstm.dispose();
-          X_train.dispose();
-          X_val.dispose();
-          y_train.dispose();
-          y_val.dispose();
           y_pred.dispose();
           residuals.dispose();
           nextValue.dispose();
@@ -1389,7 +1385,7 @@ function runme() {
         const predictedValue = mean;
 
         // Define the confidence level (e.g., 90%)
-        const confidenceLevel = 0.1; // 1.645 corresponds to 90% confidence interval
+        const confidenceLevel = 0.05; // 1.645 corresponds to 90% confidence interval
 
         // Calculate the lower and upper bounds of the range
         const lowerBound = predictedValue - confidenceLevel * standardDeviation;
@@ -1397,6 +1393,7 @@ function runme() {
 
         return [lowerBound, predictedValue, upperBound];
       }
+      // console.log(currPricePredictionArr)
       predictNextValue(currPricePredictionArr.actualPrice);
 
 
