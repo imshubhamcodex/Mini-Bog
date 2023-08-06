@@ -137,9 +137,9 @@ function gotMessage(message, sender, sendResponse) {
 
     if (!isTargetTime()) {
       timer = (checkTimeAndReload, 2 * 60 * 1000);
-      clearInterval(timer);
     } else {
       document.getElementsByClassName("refreshIcon")[0].click();
+      clearInterval(timer);
       setTimeout(exec, 5 * 1000);
     }
 
