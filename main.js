@@ -18,7 +18,41 @@ function gotMessage(message, sender, sendResponse) {
     };
 
     const clearLocalStorage = keys => {
+      if (localStorage.getItem(keys[0])) {
+        const date = localStorage.getItem("PCRSavedDate");
+        downloadData(date.replace(/\s+/g, ""));
+      }
       keys.forEach(key => localStorage.removeItem(key));
+    };
+
+    const downloadData = (
+      date = new Date().toDateString().replace(/\s+/g, "")
+    ) => {
+      const storedDataKeys = [
+        "strikePriceTrackArr",
+        "signalWidthArr",
+        "PCRData",
+        "CPRData",
+        "PCRxCord",
+        "currPricePredictionArr"
+      ];
+      const storedData = storedDataKeys.reduce((data, key) => {
+        data[key] = getStoredArray(key);
+        return data;
+      }, {});
+
+      console.log(storedData);
+      const blob = new Blob([JSON.stringify(storedData)], {
+        type: "application/json"
+      });
+      const fileName = `data_${date}.json`;
+
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = fileName;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
     };
 
     const getStoredArray = key => JSON.parse(localStorage.getItem(key)) || [];
@@ -133,7 +167,9 @@ function gotMessage(message, sender, sendResponse) {
       }
     };
 
-    const timer = !isTargetTime() ? setInterval(checkTimeAndReload, 2 * 60 * 1000) : null;
+    const timer = !isTargetTime()
+      ? setInterval(checkTimeAndReload, 2 * 60 * 1000)
+      : null;
 
     // Initialize data for the day
     const todayDate = new Date().toDateString();
