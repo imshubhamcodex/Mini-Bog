@@ -40,8 +40,6 @@ function gotMessage(message, sender, sendResponse) {
         data[key] = getStoredArray(key);
         return data;
       }, {});
-
-      console.log(storedData);
       const blob = new Blob([JSON.stringify(storedData)], {
         type: "application/json"
       });
@@ -174,10 +172,7 @@ function gotMessage(message, sender, sendResponse) {
     // Initialize data for the day
     const todayDate = new Date().toDateString();
     const storedDate = localStorage.getItem("PCRSavedDate");
-    if (
-      todayDate !== storedDate ||
-      (todayDate === storedDate && !isTargetTime())
-    ) {
+    if (todayDate !== storedDate) {
       const keysToClear = [
         "PCRData",
         "CPRData",
@@ -188,9 +183,22 @@ function gotMessage(message, sender, sendResponse) {
       ];
       clearLocalStorage(keysToClear);
       localStorage.setItem("PCRSavedDate", todayDate);
-      console.log(
-        todayDate !== storedDate ? "[Date NOK]" : "[Time NOK] Awaiting..."
-      );
+      console.log("[Date NOK]");
+    } else {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinutes = now.getMinutes();
+      if (
+        (todayDate === storedDate && currentHour > targetHour) ||
+        (todayDate === storedDate &&
+          currentHour === targetHour &&
+          currentMinutes > targetMinutes)
+      ) {
+        clearInterval(timer);
+        console.log("[Date OK] [Time OK] GO");
+        document.getElementsByClassName("refreshIcon")[0].click();
+        setTimeout(exec, 6 * 1000);
+      }
     }
   }
 }
@@ -1389,6 +1397,13 @@ function runme(
           JSON.stringify(currPricePredictionArr)
         );
 
+        let predictionErrorArr = [];
+        currPricePredictionArr.actualPrice.forEach((actualPrice, k) => {
+          predictionErrorArr.push(
+            actualPrice - currPricePredictionArr.predictedPrice[k]
+          );
+        });
+
         let data = {
           labels: [...xCord, "predicted"],
           datasets: [
@@ -1397,33 +1412,49 @@ function runme(
               backgroundColor: "rgba(0,0,0,1)",
               data: currPricePredictionArr.actualPrice,
               borderColor: "rgba(0,0,0,1)",
-              borderWidth: 1
+              borderWidth: 1,
+              type: "line",
+              yAxisID: "y-axis-1"
             },
             {
               label: "Predicted Price",
               backgroundColor: "rgba(0,0,0,0.3)",
               data: currPricePredictionArr.predictedPrice,
               borderColor: "rgba(0,0,0,0.5)",
-              borderWidth: 1
+              borderWidth: 1,
+              type: "line",
+              yAxisID: "y-axis-1"
             },
             {
               label: "Predicted Upper Band",
               backgroundColor: "rgba(0,255,0,0.3)",
               data: currPricePredictionArr.upperBand,
               borderColor: "rgba(0,255,0,0.5)",
-              borderWidth: 1
+              borderWidth: 1,
+              type: "line",
+              yAxisID: "y-axis-1"
             },
             {
               label: "Predicted Lower Band",
               backgroundColor: "rgba(255,0,0,0.3)",
               data: currPricePredictionArr.lowerBand,
               borderColor: "rgba(255,0,0,0.5)",
-              borderWidth: 1
+              borderWidth: 1,
+              type: "line",
+              yAxisID: "y-axis-1"
+            },
+            {
+              label: "Prediction Error",
+              backgroundColor: "rgba(255,0,0,0.5)",
+              data: predictionErrorArr,
+              borderColor: "rgba(255,0,0,0.5)",
+              borderWidth: 1,
+              type: "bar",
+              yAxisID: "y-axis-2"
             }
           ]
         };
         config = {
-          type: "line",
           data,
           options: {
             responsive: false,
@@ -1441,7 +1472,27 @@ function runme(
                 align: "start"
               }
             },
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                position: "left",
+                title: {
+                  display: true,
+                  text: "Curve 1"
+                },
+                id: "y-axis-1"
+              },
+              y1: {
+                beginAtZero: true,
+                position: "right",
+                title: {
+                  display: true,
+                  text: "Curve 2"
+                },
+                id: "y-axis-2"
+              }
+            }
           }
         };
 
