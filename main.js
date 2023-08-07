@@ -1333,7 +1333,7 @@ function runme(
           }
 
           // Define the confidence level (e.g., 95%)
-          const confidenceLevel = 0.1; // 1.96 corresponds to 95% confidence interval
+          const confidenceLevel = 0.05; // 1.96 corresponds to 95% confidence interval
 
           // Calculate the lower and upper bounds of the range
           lowerBound =
@@ -1350,16 +1350,71 @@ function runme(
           nextValue.dispose();
         }
 
+        function calculateAverageLastN(arr, n) {
+          const numValues = Math.min(n, arr.length);
+          if (numValues === 0) {
+            return 0;
+          }
+
+          const sumLastN = arr
+            .slice(-numValues)
+            .reduce((sum, value) => sum + value, 0);
+          const averageLastN = sumLastN / numValues;
+          return averageLastN;
+        }
+
         const thresholdsNegative = [
-          { lower: -30, upper: -10, adjustment: 20 },
-          { lower: -50, upper: -30, adjustment: 40 },
-          { lower: -70, upper: -50, adjustment: 60 }
+          {
+            lower: -30,
+            upper: -15,
+            adjustment: calculateAverageLastN(
+              currPricePredictionArr.actualPrice,
+              5
+            )
+          },
+          {
+            lower: -50,
+            upper: -30,
+            adjustment: calculateAverageLastN(
+              currPricePredictionArr.actualPrice,
+              10
+            )
+          },
+          {
+            lower: -70,
+            upper: -50,
+            adjustment: calculateAverageLastN(
+              currPricePredictionArr.actualPrice,
+              15
+            )
+          }
         ];
 
         const thresholdsPositive = [
-          { lower: 10, upper: 30, adjustment: 20 },
-          { lower: 30, upper: 50, adjustment: 40 },
-          { lower: 50, upper: 70, adjustment: 60 }
+          {
+            lower: 15,
+            upper: 30,
+            adjustment: calculateAverageLastN(
+              currPricePredictionArr.actualPrice,
+              5
+            )
+          },
+          {
+            lower: 30,
+            upper: 50,
+            adjustment: calculateAverageLastN(
+              currPricePredictionArr.actualPrice,
+              10
+            )
+          },
+          {
+            lower: 50,
+            upper: 70,
+            adjustment: calculateAverageLastN(
+              currPricePredictionArr.actualPrice,
+              15
+            )
+          }
         ];
 
         for (const threshold of thresholdsNegative) {
@@ -1398,11 +1453,19 @@ function runme(
         );
 
         let predictionErrorArr = [];
+        let avgPriceArr = [];
+        let sumError = 0;
+        let sumPrice = 0;
+
         currPricePredictionArr.actualPrice.forEach((actualPrice, k) => {
           predictionErrorArr.push(
             actualPrice - currPricePredictionArr.predictedPrice[k]
           );
+          sumPrice += actualPrice;
+          sumError += actualPrice - currPricePredictionArr.predictedPrice[k];
+          avgPriceArr.push(sumPrice / (k + 1));
         });
+        // console.log(sumError / predictionErrorArr.length);
 
         let data = {
           labels: [...xCord, "predicted"],
@@ -1426,28 +1489,37 @@ function runme(
               yAxisID: "y-axis-1"
             },
             {
+              label: "Price Simple Average",
+              backgroundColor: "rgba(153, 102, 255, 0.5)",
+              data: avgPriceArr,
+              borderColor: "rgba(153, 102, 255, 0.5)",
+              borderWidth: 1,
+              type: "line",
+              yAxisID: "y-axis-1"
+            },
+            {
               label: "Predicted Upper Band",
-              backgroundColor: "rgba(0,255,0,0.3)",
+              backgroundColor: "rgba(0,255,0,0.1)",
               data: currPricePredictionArr.upperBand,
-              borderColor: "rgba(0,255,0,0.5)",
+              borderColor: "rgba(0,255,0,0.1)",
               borderWidth: 1,
               type: "line",
               yAxisID: "y-axis-1"
             },
             {
               label: "Predicted Lower Band",
-              backgroundColor: "rgba(255,0,0,0.3)",
+              backgroundColor: "rgba(255,0,0,0.1)",
               data: currPricePredictionArr.lowerBand,
-              borderColor: "rgba(255,0,0,0.5)",
+              borderColor: "rgba(255,0,0,0.1)",
               borderWidth: 1,
               type: "line",
               yAxisID: "y-axis-1"
             },
             {
               label: "Prediction Error",
-              backgroundColor: "rgba(255,0,0,0.5)",
+              backgroundColor: "rgba(255,0,0,0.2)",
               data: predictionErrorArr,
-              borderColor: "rgba(255,0,0,0.5)",
+              borderColor: "rgba(255,0,0,0.2)",
               borderWidth: 1,
               type: "bar",
               yAxisID: "y-axis-2"
@@ -1511,7 +1583,7 @@ function runme(
         const predictedValue = mean;
 
         // Define the confidence level (e.g., 90%)
-        const confidenceLevel = 0.1; // 1.645 corresponds to 90% confidence interval
+        const confidenceLevel = 0.05; // 1.645 corresponds to 90% confidence interval
 
         // Calculate the lower and upper bounds of the range
         const lowerBound = predictedValue - confidenceLevel * standardDeviation;
@@ -1920,7 +1992,7 @@ function runme(
         (hr == 15 && minutes > 30) ||
         (hr < 9 || (hr == 9 && minutes < 15))
       ) {
-        console.log("Not a good Time");
+        console.log("[Time OUT NOK] STOP Refresh");
         return;
       } else {
         setTimeout(runme, 1000 * 100);
