@@ -1363,30 +1363,33 @@ function runme(
           return averageLastN;
         }
 
+        let avg5 = calculateAverageLastN(currPricePredictionArr.actualPrice, 5);
+        let avg10 = calculateAverageLastN(
+          currPricePredictionArr.actualPrice,
+          10
+        );
+        let avg15 = calculateAverageLastN(
+          currPricePredictionArr.actualPrice,
+          15
+        );
+
+        // console.log(avg5,avg10,avg15)
+
         const thresholdsNegative = [
           {
             lower: -30,
             upper: -15,
-            adjustment: calculateAverageLastN(
-              currPricePredictionArr.actualPrice,
-              5
-            )
+            adjustment: avg5
           },
           {
             lower: -50,
             upper: -30,
-            adjustment: calculateAverageLastN(
-              currPricePredictionArr.actualPrice,
-              10
-            )
+            adjustment: avg10
           },
           {
             lower: -70,
             upper: -50,
-            adjustment: calculateAverageLastN(
-              currPricePredictionArr.actualPrice,
-              15
-            )
+            adjustment: avg15
           }
         ];
 
@@ -1394,37 +1397,31 @@ function runme(
           {
             lower: 15,
             upper: 30,
-            adjustment: calculateAverageLastN(
-              currPricePredictionArr.actualPrice,
-              5
-            )
+            adjustment: avg5
           },
           {
             lower: 30,
             upper: 50,
-            adjustment: calculateAverageLastN(
-              currPricePredictionArr.actualPrice,
-              10
-            )
+            adjustment: avg10
           },
           {
             lower: 50,
             upper: 70,
-            adjustment: calculateAverageLastN(
-              currPricePredictionArr.actualPrice,
-              15
-            )
+            adjustment: avg15
           }
         ];
+
+        // console.log("Predicted next value:", predictedValue);
+        // console.log("Current Price:", currPrice);
 
         for (const threshold of thresholdsNegative) {
           if (
             currPrice - predictedValue > threshold.lower &&
             currPrice - predictedValue <= threshold.upper
           ) {
-            predictedValue -= threshold.adjustment;
-            upperBound -= threshold.adjustment;
-            lowerBound -= threshold.adjustment;
+            predictedValue = threshold.adjustment;
+            upperBound = threshold.adjustment;
+            lowerBound = threshold.adjustment;
             break;
           }
         }
@@ -1434,9 +1431,9 @@ function runme(
             currPrice - predictedValue > threshold.lower &&
             currPrice - predictedValue <= threshold.upper
           ) {
-            predictedValue += threshold.adjustment;
-            upperBound += threshold.adjustment;
-            lowerBound += threshold.adjustment;
+            predictedValue = threshold.adjustment;
+            upperBound = threshold.adjustment;
+            lowerBound = threshold.adjustment;
             break;
           }
         }
