@@ -1498,7 +1498,7 @@ function runme(
               label: "Predicted Upper Band",
               backgroundColor: "rgba(0,255,0,0.1)",
               data: currPricePredictionArr.upperBand,
-              borderColor: "rgba(0,255,0,0.1)",
+              borderColor: "rgba(0,255,0,0.3)",
               borderWidth: 1,
               type: "line",
               yAxisID: "y-axis-1"
@@ -1507,7 +1507,7 @@ function runme(
               label: "Predicted Lower Band",
               backgroundColor: "rgba(255,0,0,0.1)",
               data: currPricePredictionArr.lowerBand,
-              borderColor: "rgba(255,0,0,0.1)",
+              borderColor: "rgba(255,0,0,0.3)",
               borderWidth: 1,
               type: "line",
               yAxisID: "y-axis-1"
